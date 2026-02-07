@@ -88,11 +88,13 @@ function scoreQuestionComplexity(prompt: string): DimensionScore {
 
 export function classifyByRules(
   prompt: string,
-  systemPrompt: string | undefined,
+  _systemPrompt: string | undefined,
   estimatedTokens: number,
   config: ScoringConfig,
 ): ScoringResult {
-  const text = `${systemPrompt ?? ""} ${prompt}`.toLowerCase();
+  // Only match keywords against user prompt — system prompt is injected by OpenClaw
+  // and contains technical terms (code, function, algorithm, etc.) that skew scoring.
+  const text = prompt.toLowerCase();
 
   // Score all 14 dimensions
   const dimensions: DimensionScore[] = [
@@ -214,6 +216,19 @@ export function classifyByRules(
       tier: "REASONING",
       confidence: Math.max(confidence, 0.85),
       signals,
+    };
+  }
+
+  // Code implementation override: code keywords + imperative verbs = COMPLEX
+  // e.g. "帮我写一个React组件", "implement a REST API", "create a function"
+  const hasCodeSignal = config.codeKeywords.some((kw) => text.includes(kw.toLowerCase()));
+  const hasImperative = config.imperativeVerbs.some((kw) => text.includes(kw.toLowerCase()));
+  if (hasCodeSignal && hasImperative) {
+    return {
+      score: weightedScore,
+      tier: "COMPLEX",
+      confidence: 0.85,
+      signals: [...signals, "code+imperative→COMPLEX"],
     };
   }
 

@@ -35,10 +35,12 @@ export function route(
   const { config, modelPricing } = options;
 
   const fullText = `${systemPrompt ?? ""} ${prompt}`;
-  const estimatedTokens = Math.ceil(fullText.length / 4);
+  const totalTokens = Math.ceil(fullText.length / 4);
+  // Use prompt-only tokens for classification (system prompt is injected by OpenClaw, not user complexity)
+  const promptTokens = Math.ceil(prompt.length / 4);
 
   // --- Override: large context → force COMPLEX ---
-  if (estimatedTokens > config.overrides.maxTokensForceComplex) {
+  if (totalTokens > config.overrides.maxTokensForceComplex) {
     return selectModel(
       "COMPLEX",
       0.95,
@@ -46,15 +48,16 @@ export function route(
       `Input exceeds ${config.overrides.maxTokensForceComplex} tokens`,
       config.tiers,
       modelPricing,
-      estimatedTokens,
+      totalTokens,
       maxOutputTokens,
     );
   }
 
-  const hasStructuredOutput = systemPrompt ? /json|structured|schema/i.test(systemPrompt) : false;
+  // Only check user prompt for structured output — system prompt always contains "json" etc.
+  const hasStructuredOutput = /\b(json|yaml|xml|csv)\b.*\b(format|output|respond|return)\b|\b(format|output|respond|return)\b.*\b(json|yaml|xml|csv)\b/i.test(prompt);
 
   // --- Rule-based classification ---
-  const ruleResult = classifyByRules(prompt, systemPrompt, estimatedTokens, config.scoring);
+  const ruleResult = classifyByRules(prompt, systemPrompt, promptTokens, config.scoring);
 
   let tier: Tier;
   let confidence: number;
@@ -89,7 +92,7 @@ export function route(
     reasoning,
     config.tiers,
     modelPricing,
-    estimatedTokens,
+    totalTokens,
     maxOutputTokens,
   );
 }
@@ -107,10 +110,12 @@ export async function routeAsync(
   const { config, modelPricing, aiClassifier } = options;
 
   const fullText = `${systemPrompt ?? ""} ${prompt}`;
-  const estimatedTokens = Math.ceil(fullText.length / 4);
+  const totalTokens = Math.ceil(fullText.length / 4);
+  // Use prompt-only tokens for classification (system prompt is injected by OpenClaw, not user complexity)
+  const promptTokens = Math.ceil(prompt.length / 4);
 
   // --- Override: large context → force COMPLEX ---
-  if (estimatedTokens > config.overrides.maxTokensForceComplex) {
+  if (totalTokens > config.overrides.maxTokensForceComplex) {
     return selectModel(
       "COMPLEX",
       0.95,
@@ -118,15 +123,16 @@ export async function routeAsync(
       `Input exceeds ${config.overrides.maxTokensForceComplex} tokens`,
       config.tiers,
       modelPricing,
-      estimatedTokens,
+      totalTokens,
       maxOutputTokens,
     );
   }
 
-  const hasStructuredOutput = systemPrompt ? /json|structured|schema/i.test(systemPrompt) : false;
+  // Only check user prompt for structured output — system prompt always contains "json" etc.
+  const hasStructuredOutput = /\b(json|yaml|xml|csv)\b.*\b(format|output|respond|return)\b|\b(format|output|respond|return)\b.*\b(json|yaml|xml|csv)\b/i.test(prompt);
 
   // --- Rule-based classification ---
-  const ruleResult = classifyByRules(prompt, systemPrompt, estimatedTokens, config.scoring);
+  const ruleResult = classifyByRules(prompt, systemPrompt, promptTokens, config.scoring);
 
   let tier: Tier;
   let confidence: number;
@@ -175,7 +181,7 @@ export async function routeAsync(
     reasoning,
     config.tiers,
     modelPricing,
-    estimatedTokens,
+    totalTokens,
     maxOutputTokens,
   );
 }

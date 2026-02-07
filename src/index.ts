@@ -158,7 +158,7 @@ async function startProxyInBackground(api: OpenClawPluginApi): Promise<void> {
       const cost = decision.costEstimate.toFixed(4);
       const saved = (decision.savings * 100).toFixed(0);
       const method = decision.method === "llm" ? " [AI]" : "";
-      api.logger.info(`${decision.tier} → ${decision.model} $${cost} (saved ${saved}%)${method}`);
+      api.logger.info(`${decision.tier} → ${decision.model} $${cost} (saved ${saved}%)${method} | ${decision.reasoning}`);
     },
     onModelsSynced: (count) => {
       api.logger.info(`Synced ${count} models from ZenMux API`);

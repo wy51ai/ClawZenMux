@@ -53,8 +53,8 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
       "capital of", "how old", "who is", "when was", "thanks",
       // zh
       "什么是", "是什么", "定义", "翻译", "你好", "谢谢",
-      "是不是", "多大", "谁是", "什么时候", "帮我翻译",
-      "解释一下", "简单介绍",
+      "是不是", "多大", "谁是", "是谁", "你是谁", "什么时候", "帮我翻译",
+      "解释一下", "简单介绍", "怎么说", "什么意思",
       // ja
       "とは", "意味", "翻訳", "こんにちは", "教えて",
       "いつ", "だれ", "簡単に",
@@ -179,7 +179,9 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
 
     // Tier boundaries on weighted score axis
     tierBoundaries: {
-      simpleMedium: 0.0,
+      // Only prompts with explicit simple signals (keywords like 你好, 翻译, what is)
+      // should be SIMPLE. Short prompts without clear signals → MEDIUM.
+      simpleMedium: -0.12,
       mediumComplex: 0.15,
       complexReasoning: 0.25,
     },
@@ -187,25 +189,27 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
     // Sigmoid steepness for confidence calibration
     confidenceSteepness: 12,
     // Below this confidence → ambiguous (null tier)
-    confidenceThreshold: 0.7,
+    // Lowered from 0.7 — short prompts (especially Chinese) have small score distances,
+    // high threshold causes almost everything to fall through to AI/default MEDIUM.
+    confidenceThreshold: 0.55,
   },
 
   tiers: {
     SIMPLE: {
       primary: "deepseek/deepseek-v3.2",
-      fallback: ["google/gemini-2.5-flash", "openai/gpt-4o-mini"],
+      fallback: ["google/gemini-2.5-flash"],
     },
     MEDIUM: {
       primary: "deepseek/deepseek-v3.2",
-      fallback: ["google/gemini-2.5-flash", "openai/gpt-4o-mini"],
+      fallback: ["google/gemini-2.5-flash"],
     },
     COMPLEX: {
       primary: "anthropic/claude-sonnet-4.5",
       fallback: ["anthropic/claude-sonnet-4", "openai/gpt-4o"],
     },
     REASONING: {
-      primary: "openai/o3",
-      fallback: ["google/gemini-2.5-pro", "anthropic/claude-sonnet-4"],
+      primary: "openai/gpt-5.2",
+      fallback: ["google/gemini-3-pro-preview"],
     },
   },
 

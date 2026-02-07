@@ -241,8 +241,22 @@ async function proxyRequest(
 
       if (parsed.model === AUTO_MODEL || parsed.model === AUTO_MODEL_SHORT) {
         // Extract prompt from messages
-        type ChatMessage = { role: string; content: string };
+        // Content can be string or array of parts: [{type:"text",text:"..."}]
+        type ContentPart = { type: string; text?: string };
+        type ChatMessage = { role: string; content: string | ContentPart[] };
         const messages = parsed.messages as ChatMessage[] | undefined;
+
+        function extractText(content: string | ContentPart[] | undefined): string {
+          if (typeof content === "string") return content;
+          if (Array.isArray(content)) {
+            return content
+              .filter((p) => p.type === "text" && typeof p.text === "string")
+              .map((p) => p.text!)
+              .join("\n");
+          }
+          return "";
+        }
+
         let lastUserMsg: ChatMessage | undefined;
         if (messages) {
           for (let i = messages.length - 1; i >= 0; i--) {
@@ -253,8 +267,8 @@ async function proxyRequest(
           }
         }
         const systemMsg = messages?.find((m: ChatMessage) => m.role === "system");
-        const prompt = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : "";
-        const systemPrompt = typeof systemMsg?.content === "string" ? systemMsg.content : undefined;
+        const prompt = extractText(lastUserMsg?.content);
+        const systemPrompt = extractText(systemMsg?.content) || undefined;
 
         // Use async route with AI classifier fallback
         routingDecision = await routeAsync(prompt, systemPrompt, maxTokens, routerOpts);
