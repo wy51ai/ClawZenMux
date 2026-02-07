@@ -1,0 +1,69 @@
+{
+  "id": "clawzenmux",
+  "name": "ClawZenMux",
+  "description": "Smart LLM router via ZenMux — 90+ models, AI-powered routing, multi-language, token cost savings",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "apiKey": {
+        "type": "string",
+        "description": "ZenMux API key. Optional — reads from ZENMUX_API_KEY env var if not set."
+      },
+      "useAiClassifier": {
+        "type": "boolean",
+        "description": "Use AI to classify prompt complexity (supports all languages). Default: true.",
+        "default": true
+      },
+      "routing": {
+        "type": "object",
+        "description": "Override default routing configuration",
+        "properties": {
+          "tiers": {
+            "type": "object",
+            "description": "Customize which model handles each complexity tier",
+            "properties": {
+              "SIMPLE": {
+                "type": "object",
+                "properties": {
+                  "primary": { "type": "string", "description": "Model ID for simple tasks (e.g. deepseek/deepseek-v3.2)" },
+                  "fallback": { "type": "array", "items": { "type": "string" }, "description": "Fallback models" }
+                }
+              },
+              "MEDIUM": {
+                "type": "object",
+                "properties": {
+                  "primary": { "type": "string", "description": "Model ID for medium tasks" },
+                  "fallback": { "type": "array", "items": { "type": "string" } }
+                }
+              },
+              "COMPLEX": {
+                "type": "object",
+                "properties": {
+                  "primary": { "type": "string", "description": "Model ID for complex tasks" },
+                  "fallback": { "type": "array", "items": { "type": "string" } }
+                }
+              },
+              "REASONING": {
+                "type": "object",
+                "properties": {
+                  "primary": { "type": "string", "description": "Model ID for reasoning tasks" },
+                  "fallback": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "uiHints": {
+    "apiKey": {
+      "label": "ZenMux API Key",
+      "sensitive": true,
+      "placeholder": "sk-... (optional — reads from ZENMUX_API_KEY env var)"
+    },
+    "useAiClassifier": {
+      "label": "AI Classifier (Multi-Language)"
+    }
+  }
+}

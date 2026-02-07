@@ -1,0 +1,42 @@
+/**
+ * Usage Logger
+ *
+ * Logs every LLM request as a JSON line to a daily log file.
+ * Files: ~/.openclaw/zenmux/logs/usage-YYYY-MM-DD.jsonl
+ *
+ * Logging never breaks the request flow — all errors are swallowed.
+ */
+
+import { appendFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { homedir } from "node:os";
+
+export type UsageEntry = {
+  timestamp: string;
+  model: string;
+  cost: number;
+  latencyMs: number;
+};
+
+const LOG_DIR = join(homedir(), ".openclaw", "zenmux", "logs");
+let dirReady = false;
+
+async function ensureDir(): Promise<void> {
+  if (dirReady) return;
+  await mkdir(LOG_DIR, { recursive: true });
+  dirReady = true;
+}
+
+/**
+ * Log a usage entry as a JSON line.
+ */
+export async function logUsage(entry: UsageEntry): Promise<void> {
+  try {
+    await ensureDir();
+    const date = entry.timestamp.slice(0, 10); // YYYY-MM-DD
+    const file = join(LOG_DIR, `usage-${date}.jsonl`);
+    await appendFile(file, JSON.stringify(entry) + "\n");
+  } catch {
+    // Never break the request flow
+  }
+}

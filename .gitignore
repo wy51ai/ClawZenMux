@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+.idea/
+.vscode/
+.DS_Store
+.claude/
+.codex/
+.gemini/
