@@ -39,6 +39,7 @@ import { fetchWithRetry } from "./retry.js";
 
 const ZENMUX_API = "https://zenmux.ai/api";
 const AUTO_MODEL = "zenmux/auto";
+const AUTO_MODEL_SHORT = "auto";
 const USER_AGENT = "clawzenmux/0.1.0";
 const HEARTBEAT_INTERVAL_MS = 2_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 180_000; // 3 minutes
@@ -238,7 +239,7 @@ async function proxyRequest(
       modelId = (parsed.model as string) || "";
       const maxTokens = (parsed.max_tokens as number) || 4096;
 
-      if (parsed.model === AUTO_MODEL) {
+      if (parsed.model === AUTO_MODEL || parsed.model === AUTO_MODEL_SHORT) {
         // Extract prompt from messages
         type ChatMessage = { role: string; content: string };
         const messages = parsed.messages as ChatMessage[] | undefined;

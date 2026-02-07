@@ -48,4 +48,9 @@ export const zenmuxProvider: ProviderPlugin = {
 
   // Auth via API key (interactive wizard)
   auth: [zenmuxApiKeyAuth],
+
+  // Extract API key from stored credential for Authorization header
+  formatApiKey(cred) {
+    return cred.apiKey as string;
+  },
 };

@@ -32,7 +32,7 @@ import { join } from "node:path";
 /**
  * Inject ZenMux models config into OpenClaw config file.
  */
-function injectModelsConfig(logger: { info: (msg: string) => void }): void {
+function injectModelsConfig(logger: { info: (msg: string) => void }, apiKey?: string): void {
   const configPath = join(homedir(), ".openclaw", "openclaw.json");
   if (!existsSync(configPath)) {
     logger.info("OpenClaw config not found, skipping models injection");
@@ -52,6 +52,7 @@ function injectModelsConfig(logger: { info: (msg: string) => void }): void {
     config.models.providers.zenmux = {
       baseUrl: "http://127.0.0.1:8403/v1",
       api: "openai-completions",
+      ...(apiKey ? { apiKey } : {}),
       models: OPENCLAW_MODELS,
     };
 
@@ -183,8 +184,12 @@ const plugin: OpenClawPluginDefinition = {
     // Register ZenMux as a provider (sync — available immediately)
     api.registerProvider(zenmuxProvider);
 
+    // Resolve API key early so we can inject it into configs
+    const keyResult = resolveApiKey(api.pluginConfig);
+    const apiKey = keyResult?.key;
+
     // Inject models config into OpenClaw config file
-    injectModelsConfig(api.logger);
+    injectModelsConfig(api.logger, apiKey);
 
     // Set runtime config for immediate availability
     if (!api.config.models) {
@@ -196,6 +201,7 @@ const plugin: OpenClawPluginDefinition = {
     api.config.models.providers.zenmux = {
       baseUrl: "http://127.0.0.1:8403/v1",
       api: "openai-completions",
+      ...(apiKey ? { apiKey } : {}),
       models: OPENCLAW_MODELS,
     };
 
