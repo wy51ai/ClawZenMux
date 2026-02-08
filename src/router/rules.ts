@@ -20,12 +20,121 @@ function scoreTokenCount(
   thresholds: { simple: number; complex: number },
 ): DimensionScore {
   if (estimatedTokens < thresholds.simple) {
-    return { name: "tokenCount", score: -1.0, signal: `short (${estimatedTokens} tokens)` };
+    // Keep a mild "short prompt" penalty, but avoid overpowering technical intent.
+    return { name: "tokenCount", score: -0.6, signal: `short (${estimatedTokens} tokens)` };
   }
   if (estimatedTokens > thresholds.complex) {
     return { name: "tokenCount", score: 1.0, signal: `long (${estimatedTokens} tokens)` };
   }
   return { name: "tokenCount", score: 0, signal: null };
+}
+
+function hasArchitectureComplexitySignal(text: string): boolean {
+  const architectureNouns = [
+    "architecture",
+    "system architecture",
+    "solution architecture",
+    "platform architecture",
+    "event-driven architecture",
+    "system design",
+    "design a system",
+    "distributed system",
+    "topology",
+    "架构",
+    "架构设计",
+    "系统架构",
+    "平台架构",
+    "事件驱动架构",
+    "微服务架构",
+    "系统拓扑",
+    "系统设计",
+    "消息队列",
+    "message queue",
+    "event bus",
+  ];
+  const scaleSignals = [
+    "distributed",
+    "scalable",
+    "scale",
+    "high concurrency",
+    "qps",
+    "rps",
+    "latency",
+    "durability",
+    "reliability",
+    "availability",
+    "shard",
+    "sharding",
+    "partition",
+    "replica",
+    "replication",
+    "failover",
+    "multi-region",
+    "multi-tenant",
+    "idempotent",
+    "exactly-once",
+    "at-least-once",
+    "eventual consistency",
+    "backpressure",
+    "dead letter",
+    "dlq",
+    "分布式",
+    "高并发",
+    "并发",
+    "延迟",
+    "低延迟",
+    "可扩展",
+    "扩展性",
+    "吞吐量",
+    "可用性",
+    "可靠性",
+    "分片",
+    "分区",
+    "副本",
+    "复制",
+    "容灾",
+    "多活",
+    "多租户",
+    "幂等",
+    "最终一致性",
+    "一致性",
+    "故障转移",
+    "削峰",
+    "背压",
+    "死信",
+    "死信队列",
+    "microservice",
+    "kubernetes",
+    "consistency",
+    "fault tolerance",
+    "high availability",
+    "高可用",
+    "吞吐",
+    "throughput",
+  ];
+  const designVerbs = [
+    "design",
+    "architect",
+    "build",
+    "implement",
+    "propose",
+    "plan",
+    "draft",
+    "outline",
+    "设计",
+    "构建",
+    "搭建",
+    "实现",
+    "规划",
+    "给出",
+    "制定",
+  ];
+
+  const hasArchitectureNoun = architectureNouns.some((kw) => text.includes(kw));
+  const hasScaleSignal = scaleSignals.some((kw) => text.includes(kw));
+  const hasDesignVerb = designVerbs.some((kw) => text.includes(kw));
+
+  return hasArchitectureNoun && (hasScaleSignal || hasDesignVerb);
 }
 
 function scoreKeywordMatch(
@@ -210,6 +319,17 @@ export function classifyByRules(
       tier: "REASONING",
       confidence: Math.max(confidence, 0.85),
       signals,
+    };
+  }
+
+  // Architecture/system-design prompts are typically high-complexity even when short.
+  // Route these directly to COMPLEX to avoid under-classifying into MEDIUM.
+  if (hasArchitectureComplexitySignal(userText)) {
+    return {
+      score: Math.max(weightedScore, config.tierBoundaries.mediumComplex + 0.03),
+      tier: "COMPLEX",
+      confidence: 0.82,
+      signals: [...signals, "architecture-design"],
     };
   }
 

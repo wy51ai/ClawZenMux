@@ -100,7 +100,8 @@ openclaw models set anthropic/claude-sonnet-4.5
 ≥ 0.25       → REASONING
 
 特殊规则：2+ 个推理关键词命中 → 直接判定 REASONING
-置信度 < 0.7 → 标记为「模糊」，回退到默认层级 (MEDIUM)
+架构设计信号（architecture/架构 + 分布式/消息队列/分片/容灾/QPS/多租户等）→ 直接判定 COMPLEX
+置信度 < 0.6 → 标记为「模糊」，回退到默认层级 (MEDIUM)
 ```
 
 ### 覆盖规则
