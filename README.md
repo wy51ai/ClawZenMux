@@ -1,8 +1,12 @@
 # ClawZenMux
 
+**[English](README_EN.md)** | 中文
+
 OpenClaw 智能 LLM 路由插件 —— 通过 [ZenMux](https://zenmux.ai) 统一网关调用 90+ 模型，自动选择最便宜的模型处理请求，节省 78-96% 的 token 费用。
 
 > **注意**：这是一个社区第三方插件，非 OpenClaw 或 ZenMux 官方出品。欢迎各位大佬提交PR改进。
+>
+> 本插件参考 [ClawRouter](https://github.com/BlockRunAI/ClawRouter) 架构开发，去掉了区块链/x402 支付部分，改用 ZenMux 统一网关 + API Key 认证。感谢 ClawRouter 作者的开源贡献！
 
 ## 工作原理
 
@@ -53,10 +57,29 @@ echo "your-key-here" > ~/.openclaw/zenmux/api.key
 ```bash
 # 自动选择最优模型
 openclaw models set clawzenmux/auto
-
-# 或者指定特定模型
-openclaw models set anthropic/claude-sonnet-4.5
 ```
+
+### 5. 提示词强制路由（可选）
+
+当你使用 `clawzenmux/auto` 时，可以在用户消息里加入控制指令强制层级：
+
+```text
+USE SIMPLE
+USE MEDIUM
+USE COMPLEX
+USE REASONING
+```
+
+示例：
+
+```text
+USE COMPLEX 设计一个分布式消息队列的架构
+```
+
+说明：
+- 该指令只在 `model=clawzenmux/auto`（或 `auto`）时生效
+- 代理会在转发前移除 `USE ...` 指令文本，避免污染真正的提示词
+- 若同一条消息没有指令，继续走默认规则引擎
 
 ## 智能路由详解
 

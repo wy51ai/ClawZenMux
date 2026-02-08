@@ -22,6 +22,10 @@ export type RouteContext = {
    */
   estimatedInputTokens?: number;
   /**
+   * Force a tier (prompt-level override), e.g. "USE COMPLEX".
+   */
+  forcedTier?: Tier;
+  /**
    * Whether the request explicitly requires structured output (e.g. response_format).
    */
   structuredOutputRequired?: boolean;
@@ -50,6 +54,20 @@ export function route(
   const userEstimatedTokens = Math.ceil(prompt.length / 4);
   const fallbackEstimatedTokens = Math.ceil(`${systemPrompt ?? ""} ${prompt}`.length / 4);
   const estimatedTokens = context?.estimatedInputTokens ?? fallbackEstimatedTokens;
+
+  // --- Prompt override: explicit tier force ---
+  if (context?.forcedTier) {
+    return selectModel(
+      context.forcedTier,
+      1.0,
+      "rules",
+      `forced tier override: ${context.forcedTier}`,
+      config.tiers,
+      modelPricing,
+      estimatedTokens,
+      maxOutputTokens,
+    );
+  }
 
   // --- Override: large context → force COMPLEX ---
   if (estimatedTokens > config.overrides.maxTokensForceComplex) {

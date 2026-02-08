@@ -27,6 +27,7 @@ import {
   type RoutingDecision,
   type RoutingConfig,
   type ModelPricing,
+  type Tier,
 } from "./router/index.js";
 import { ZENMUX_MODELS } from "./models.js";
 import type { ZenMuxModel } from "./models.js";
@@ -42,6 +43,65 @@ const USER_AGENT = "clawzenmux/0.1.0";
 const HEARTBEAT_INTERVAL_MS = 2_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 180_000; // 3 minutes
 const DEFAULT_PORT = 8403;
+const TIER_OVERRIDE_REGEX = /\bUSE\s+(SIMPLE|MEDIUM|COMPLEX|REASONING)\b/i;
+const TIER_OVERRIDE_REGEX_GLOBAL = /\bUSE\s+(SIMPLE|MEDIUM|COMPLEX|REASONING)\b/gi;
+
+type ContentPart = { type: string; text?: string };
+type ChatMessage = { role: string; content?: string | ContentPart[] };
+
+function extractText(content: string | ContentPart[] | undefined): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((p) => p.type === "text" && typeof p.text === "string")
+      .map((p) => p.text!)
+      .join("\n");
+  }
+  return "";
+}
+
+function parseForcedTier(text: string): Tier | undefined {
+  const match = text.match(TIER_OVERRIDE_REGEX);
+  if (!match) return undefined;
+  return match[1].toUpperCase() as Tier;
+}
+
+function stripForcedTierDirective(text: string): string {
+  return text.replace(TIER_OVERRIDE_REGEX_GLOBAL, "").replace(/[ \t]{2,}/g, " ").trim();
+}
+
+function extractAndStripForcedTier(message: ChatMessage | undefined): Tier | undefined {
+  if (!message || message.content === undefined) return undefined;
+
+  if (typeof message.content === "string") {
+    const forcedTier = parseForcedTier(message.content);
+    if (forcedTier) {
+      message.content = stripForcedTierDirective(message.content);
+    }
+    return forcedTier;
+  }
+
+  if (Array.isArray(message.content)) {
+    let forcedTier: Tier | undefined;
+    message.content = message.content.map((part) => {
+      if (part.type !== "text" || typeof part.text !== "string") return part;
+
+      const partForcedTier = parseForcedTier(part.text);
+      if (!forcedTier && partForcedTier) {
+        forcedTier = partForcedTier;
+      }
+      if (!partForcedTier) return part;
+
+      return {
+        ...part,
+        text: stripForcedTierDirective(part.text),
+      };
+    });
+    return forcedTier;
+  }
+
+  return undefined;
+}
 
 export type ProxyOptions = {
   apiKey: string;
@@ -234,23 +294,9 @@ async function proxyRequest(
 
       if (parsed.model === AUTO_MODEL || parsed.model === AUTO_MODEL_SHORT) {
         // Extract prompt from messages
-        // Content can be string or array of parts: [{type:"text",text:"..."}]
-        type ContentPart = { type: string; text?: string };
-        type ChatMessage = { role: string; content?: string | ContentPart[] };
         const messages = Array.isArray(parsed.messages)
           ? (parsed.messages as ChatMessage[])
           : undefined;
-
-        function extractText(content: string | ContentPart[] | undefined): string {
-          if (typeof content === "string") return content;
-          if (Array.isArray(content)) {
-            return content
-              .filter((p) => p.type === "text" && typeof p.text === "string")
-              .map((p) => p.text!)
-              .join("\n");
-          }
-          return "";
-        }
 
         let lastUserMsg: ChatMessage | undefined;
         if (messages) {
@@ -262,6 +308,7 @@ async function proxyRequest(
           }
         }
         const systemMsg = messages?.find((m: ChatMessage) => m.role === "system");
+        const forcedTier = extractAndStripForcedTier(lastUserMsg);
         const prompt = extractText(lastUserMsg?.content);
         const systemPrompt = extractText(systemMsg?.content) || undefined;
         const allMessageText =
@@ -276,6 +323,7 @@ async function proxyRequest(
 
         routingDecision = route(prompt, systemPrompt, maxTokens, routerOpts, {
           estimatedInputTokens,
+          forcedTier,
           structuredOutputRequired,
         });
 
