@@ -75,12 +75,12 @@ function scoreQuestionComplexity(prompt: string): DimensionScore {
 
 export function classifyByRules(
   prompt: string,
-  systemPrompt: string | undefined,
   estimatedTokens: number,
   config: ScoringConfig,
 ): ScoringResult {
-  const text = `${systemPrompt ?? ""} ${prompt}`.toLowerCase();
-  // User prompt only — used for reasoning markers (system prompt shouldn't influence complexity)
+  // Complexity scoring should be driven by user intent, not static system prompts.
+  const text = prompt.toLowerCase();
+  // User prompt only — used for reasoning markers.
   const userText = prompt.toLowerCase();
 
   // Score all 14 dimensions

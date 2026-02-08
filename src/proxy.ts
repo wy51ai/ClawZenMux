@@ -225,14 +225,21 @@ async function proxyRequest(
       const parsed = JSON.parse(body.toString()) as Record<string, unknown>;
       isStreaming = parsed.stream === true;
       modelId = (parsed.model as string) || "";
-      const maxTokens = (parsed.max_tokens as number) || 4096;
+      const maxTokens =
+        typeof parsed.max_completion_tokens === "number"
+          ? parsed.max_completion_tokens
+          : typeof parsed.max_tokens === "number"
+            ? parsed.max_tokens
+            : 4096;
 
       if (parsed.model === AUTO_MODEL || parsed.model === AUTO_MODEL_SHORT) {
         // Extract prompt from messages
         // Content can be string or array of parts: [{type:"text",text:"..."}]
         type ContentPart = { type: string; text?: string };
-        type ChatMessage = { role: string; content: string | ContentPart[] };
-        const messages = parsed.messages as ChatMessage[] | undefined;
+        type ChatMessage = { role: string; content?: string | ContentPart[] };
+        const messages = Array.isArray(parsed.messages)
+          ? (parsed.messages as ChatMessage[])
+          : undefined;
 
         function extractText(content: string | ContentPart[] | undefined): string {
           if (typeof content === "string") return content;
@@ -257,8 +264,20 @@ async function proxyRequest(
         const systemMsg = messages?.find((m: ChatMessage) => m.role === "system");
         const prompt = extractText(lastUserMsg?.content);
         const systemPrompt = extractText(systemMsg?.content) || undefined;
+        const allMessageText =
+          messages
+            ?.map((m) => extractText(m.content))
+            .filter((s) => s.length > 0)
+            .join("\n") ?? "";
+        const estimatedInputTokens =
+          allMessageText.length > 0 ? Math.ceil(allMessageText.length / 4) : undefined;
+        const structuredOutputRequired =
+          typeof parsed.response_format === "object" && parsed.response_format !== null;
 
-        routingDecision = route(prompt, systemPrompt, maxTokens, routerOpts);
+        routingDecision = route(prompt, systemPrompt, maxTokens, routerOpts, {
+          estimatedInputTokens,
+          structuredOutputRequired,
+        });
 
         // Replace model in body
         parsed.model = routingDecision.model;

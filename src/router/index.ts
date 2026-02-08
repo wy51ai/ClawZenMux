@@ -15,6 +15,18 @@ export type RouterOptions = {
   modelPricing: Map<string, ModelPricing>;
 };
 
+export type RouteContext = {
+  /**
+   * Estimated total input tokens for the full request payload.
+   * Falls back to `systemPrompt + prompt` estimate when omitted.
+   */
+  estimatedInputTokens?: number;
+  /**
+   * Whether the request explicitly requires structured output (e.g. response_format).
+   */
+  structuredOutputRequired?: boolean;
+};
+
 /**
  * Route a request to the cheapest capable model.
  *
@@ -29,12 +41,15 @@ export function route(
   systemPrompt: string | undefined,
   maxOutputTokens: number,
   options: RouterOptions,
+  context?: RouteContext,
 ): RoutingDecision {
   const { config, modelPricing } = options;
 
-  // Estimate input tokens (~4 chars per token)
-  const fullText = `${systemPrompt ?? ""} ${prompt}`;
-  const estimatedTokens = Math.ceil(fullText.length / 4);
+  // Token estimates (~4 chars/token): scoring should use user prompt only,
+  // while cost/override should use full request estimate.
+  const userEstimatedTokens = Math.ceil(prompt.length / 4);
+  const fallbackEstimatedTokens = Math.ceil(`${systemPrompt ?? ""} ${prompt}`.length / 4);
+  const estimatedTokens = context?.estimatedInputTokens ?? fallbackEstimatedTokens;
 
   // --- Override: large context → force COMPLEX ---
   if (estimatedTokens > config.overrides.maxTokensForceComplex) {
@@ -50,11 +65,13 @@ export function route(
     );
   }
 
-  // Structured output detection
-  const hasStructuredOutput = systemPrompt ? /json|structured|schema/i.test(systemPrompt) : false;
+  // Structured output detection:
+  // prioritize explicit request signal (from proxy), then user prompt hints.
+  const hasStructuredOutput =
+    context?.structuredOutputRequired ?? /json|structured|schema|yaml|xml|csv|table/i.test(prompt);
 
   // --- Rule-based classification ---
-  const ruleResult = classifyByRules(prompt, systemPrompt, estimatedTokens, config.scoring);
+  const ruleResult = classifyByRules(prompt, userEstimatedTokens, config.scoring);
 
   let tier: Tier;
   let confidence: number;
