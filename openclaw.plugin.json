@@ -1,18 +1,13 @@
 {
   "id": "clawzenmux",
   "name": "ClawZenMux",
-  "description": "Smart LLM router via ZenMux — 90+ models, AI-powered routing, multi-language, token cost savings",
+  "description": "Smart LLM router via ZenMux — 90+ models, rules-based routing, token cost savings",
   "configSchema": {
     "type": "object",
     "properties": {
       "apiKey": {
         "type": "string",
         "description": "ZenMux API key. Optional — reads from ZENMUX_API_KEY env var if not set."
-      },
-      "useAiClassifier": {
-        "type": "boolean",
-        "description": "Use AI to classify prompt complexity (supports all languages). Default: true.",
-        "default": true
       },
       "routing": {
         "type": "object",
@@ -61,9 +56,6 @@
       "label": "ZenMux API Key",
       "sensitive": true,
       "placeholder": "sk-... (optional — reads from ZENMUX_API_KEY env var)"
-    },
-    "useAiClassifier": {
-      "label": "AI Classifier (Multi-Language)"
     }
   }
 }

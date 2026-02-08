@@ -23,7 +23,7 @@ export type ZenMuxModel = {
 export const ZENMUX_MODELS: ZenMuxModel[] = [
   // Smart routing meta-model — proxy replaces with actual model
   {
-    id: "zenmux/auto",
+    id: "clawzenmux/auto",
     name: "ZenMux Smart Router",
     inputPrice: 0,
     outputPrice: 0,

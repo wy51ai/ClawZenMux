@@ -114,7 +114,7 @@ export async function fetchModels(
 
     // Add the auto meta-model
     models.unshift({
-      id: "zenmux/auto",
+      id: "clawzenmux/auto",
       name: "ZenMux Smart Router",
       inputPrice: 0,
       outputPrice: 0,

@@ -2,24 +2,26 @@
 
 OpenClaw 智能 LLM 路由插件 —— 通过 [ZenMux](https://zenmux.ai) 统一网关调用 90+ 模型，自动选择最便宜的模型处理请求，节省 78-96% 的 token 费用。
 
+> **注意**：这是一个社区第三方插件，非 OpenClaw 或 ZenMux 官方出品。欢迎各位大佬提交PR改进。
+
 ## 工作原理
 
 ```
 OpenClaw Agent
   │
-  ▼  POST /v1/chat/completions  { model: "zenmux/auto", messages: [...] }
+  ▼  POST /v1/chat/completions  { model: "clawzenmux/auto", messages: [...] }
   │
   ▼  localhost:8403 (ClawZenMux 本地代理)
   │
   ├─ 1. 解析请求，提取用户 prompt
-  ├─ 2. 智能分类：规则引擎 (<1ms) + AI 分类器 (多语言)
+  ├─ 2. 规则引擎评分 (14 维加权，<1ms，零成本)
   ├─ 3. 根据复杂度选择最便宜的模型
   ├─ 4. 替换 model 字段，转发到 ZenMux API
   ├─ 5. 流式返回响应给 Agent
   └─ 6. 记录使用日志
 ```
 
-**核心思路**：简单问题用便宜模型（DeepSeek $0.28/M），复杂问题用强力模型（Claude $3/M），推理问题用专业模型（o3 $2/M）。用户只需设置 `zenmux/auto`，路由器自动判断。
+**核心思路**：简单问题用便宜模型（DeepSeek $0.28/M），中等问题用均衡模型（Gemini 3 Flash），复杂问题用强力模型（Claude $3/M），推理问题用专业模型（DeepSeek Thinking）。用户只需设置 `clawzenmux/auto`，路由器自动判断。
 
 ## 快速开始
 
@@ -50,7 +52,7 @@ echo "your-key-here" > ~/.openclaw/zenmux/api.key
 
 ```bash
 # 自动选择最优模型
-openclaw models set zenmux/auto
+openclaw models set clawzenmux/auto
 
 # 或者指定特定模型
 openclaw models set anthropic/claude-sonnet-4.5
@@ -63,32 +65,30 @@ openclaw models set anthropic/claude-sonnet-4.5
 | 层级 | 默认模型 | 价格 ($/M tokens) | 适用场景 |
 |------|---------|-------------------|----------|
 | **SIMPLE** | deepseek/deepseek-v3.2 | $0.28 / $0.43 | 简单问答、翻译、定义 |
-| **MEDIUM** | deepseek/deepseek-v3.2 | $0.28 / $0.43 | 一般编码、摘要、解释 |
+| **MEDIUM** | google/gemini-3-flash-preview | $0.15 / $0.60 | 一般编码、摘要、解释 |
 | **COMPLEX** | anthropic/claude-sonnet-4.5 | $3.00 / $15.00 | 复杂代码、架构设计、多步分析 |
-| **REASONING** | openai/o3 | $2.00 / $8.00 | 数学证明、逻辑推导、定理证明 |
+| **REASONING** | deepseek/deepseek-v3.2-thinking | $0.28 / $0.43 | 数学证明、逻辑推导、定理证明 |
 
-### 两阶段分类
+### 规则引擎（<1ms，免费）
 
-#### 第一阶段：规则引擎（<1ms，免费，多语言）
-
-对 prompt 进行 14 维加权评分，根据总分映射到层级。每个维度的关键词覆盖英文、中文、日文、韩文：
+100% 本地规则评分，无外部 API 调用。对 prompt 进行 14 维加权评分，根据总分映射到层级。关键词覆盖英文、中文、日文、俄文：
 
 | 维度 | 权重 | 检测内容 | 多语言关键词示例 |
 |------|------|----------|-----------------|
-| 推理标记 | 0.18 | 证明、推导类提示 | prove, theorem / 证明, 推导 / 証明, 定理 / 증명 |
-| 代码存在 | 0.15 | 代码相关内容 | function, class, \`\`\` / 代码, 函数, 编程 / コード / 코드 |
-| 简单指标 | 0.12 | 简单问题标记 | what is, hello / 什么是, 你好 / とは / 무엇 |
-| 多步模式 | 0.12 | 多步骤任务 | first...then / 首先…然后 / まず…次に / 먼저…그다음 |
-| 技术术语 | 0.10 | 专业技术词汇 | algorithm / 算法, 分布式 / アルゴリズム / 알고리즘 |
+| 推理标记 | 0.18 | 证明、推导类提示 | prove, theorem / 证明, 推导 / 証明, 定理 / доказать |
+| 代码存在 | 0.15 | 代码相关内容 | function, class, \`\`\` / 函数, 类 / 関数 / функция |
+| 简单指标 | 0.12 | 简单问题标记 | what is, hello / 什么是, 你好 / とは / что такое |
+| 多步模式 | 0.12 | 多步骤任务 | first...then, step 1, 1. 2. 3. |
+| 技术术语 | 0.10 | 专业技术词汇 | algorithm / 算法 / アルゴリズム / алгоритм |
 | Token 数量 | 0.08 | 输入长度 | <50 tokens → 简单，>500 → 复杂 |
-| 创意标记 | 0.05 | 创意写作 | story, poem / 故事, 小说 / 物語 / 이야기 |
-| 问题复杂度 | 0.05 | 多个问号 | 超过 3 个 ? 或 ？ |
-| 约束条件 | 0.04 | 限制条件 | at most / 不超过, 时间复杂度 / 以下 / 이하 |
-| 命令动词 | 0.03 | 构建指令 | build, create / 构建, 帮我写 / 作成 / 구현 |
-| 输出格式 | 0.03 | 结构化输出 | json, yaml / 格式, 表格 / フォーマット / 포맷 |
-| 引用复杂度 | 0.02 | 上下文引用 | above, the docs / 上面, 文档 / 上記 / 위의 |
-| 领域特异性 | 0.02 | 专业领域 | quantum / 量子 / 量子 / 양자 |
-| 否定复杂度 | 0.01 | 否定约束 | don't, avoid / 不要, 避免 / しないで / 금지 |
+| 创意标记 | 0.05 | 创意写作 | story, poem / 故事, 诗 / 物語 / история |
+| 问题复杂度 | 0.05 | 多个问号 | 超过 3 个 ? |
+| 约束条件 | 0.04 | 限制条件 | at most / 不超过 / 以下 / не более |
+| 命令动词 | 0.03 | 构建指令 | build, create / 构建, 创建 / 構築 / создать |
+| 输出格式 | 0.03 | 结构化输出 | json, yaml / 表格 / テーブル / таблица |
+| 引用复杂度 | 0.02 | 上下文引用 | above, the docs / 上面, 文档 / 上記 / выше |
+| 领域特异性 | 0.02 | 专业领域 | quantum, fpga / 量子 / 量子 / квантовый |
+| 否定复杂度 | 0.01 | 否定约束 | don't, avoid / 不要, 避免 / しないで / избегать |
 
 **评分逻辑**：
 ```
@@ -100,24 +100,14 @@ openclaw models set anthropic/claude-sonnet-4.5
 ≥ 0.25       → REASONING
 
 特殊规则：2+ 个推理关键词命中 → 直接判定 REASONING
-置信度 < 0.7 → 标记为「模糊」，交给 AI 分类器
+置信度 < 0.7 → 标记为「模糊」，回退到默认层级 (MEDIUM)
 ```
-
-#### 第二阶段：AI 分类器（多语言支持）
-
-当规则引擎判断不确定时，用一个便宜的 LLM（默认 gemini-2.5-flash）来分类：
-
-- 支持中文、日文、韩文、阿拉伯文等任何语言
-- prompt 截断到 500 字符，max_tokens=10，几乎零成本
-- 内置 LRU 缓存（500 条，1 小时 TTL），避免重复分类
-- 5 秒超时，失败时回退到默认层级（MEDIUM）
-- 可通过配置 `useAiClassifier: false` 关闭
 
 ### 覆盖规则
 
 - **大上下文** (>100k tokens) → 强制 COMPLEX
-- **结构化输出** (system prompt 含 json/schema) → 最低 MEDIUM
-- **模糊判定** → AI 分类器（启用时）或默认 MEDIUM
+- **结构化输出** (system prompt 含 json/structured/schema) → 最低 MEDIUM
+- **模糊判定** → 默认 MEDIUM
 
 ## 配置
 
@@ -130,7 +120,6 @@ openclaw models set anthropic/claude-sonnet-4.5
       "clawzenmux": {
         "config": {
           "apiKey": "your-zenmux-api-key",
-          "useAiClassifier": true,
           "routing": {
             "tiers": {
               "SIMPLE": {
@@ -138,16 +127,16 @@ openclaw models set anthropic/claude-sonnet-4.5
                 "fallback": ["google/gemini-2.5-flash"]
               },
               "MEDIUM": {
-                "primary": "deepseek/deepseek-v3.2",
-                "fallback": ["google/gemini-2.5-flash"]
+                "primary": "google/gemini-3-flash-preview",
+                "fallback": ["deepseek/deepseek-v3.2"]
               },
               "COMPLEX": {
                 "primary": "anthropic/claude-sonnet-4.5",
                 "fallback": ["anthropic/claude-sonnet-4", "openai/gpt-4o"]
               },
               "REASONING": {
-                "primary": "openai/o3",
-                "fallback": ["google/gemini-2.5-pro"]
+                "primary": "deepseek/deepseek-v3.2-thinking",
+                "fallback": ["openai/gpt-5.2"]
               }
             }
           }
@@ -163,7 +152,6 @@ openclaw models set anthropic/claude-sonnet-4.5
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `apiKey` | string | — | ZenMux API Key，也可用环境变量 `ZENMUX_API_KEY` |
-| `useAiClassifier` | boolean | `true` | 是否启用 AI 分类器（多语言支持） |
 | `routing.tiers.{TIER}.primary` | string | 见上表 | 该层级的首选模型 |
 | `routing.tiers.{TIER}.fallback` | string[] | 见上表 | 首选不可用时的备选模型 |
 
@@ -210,9 +198,8 @@ src/
 ├── logger.ts                # 使用日志（~/.openclaw/zenmux/logs/）
 ├── errors.ts                # 错误类型定义
 └── router/
-    ├── index.ts             # 路由入口（route 同步 + routeAsync 异步）
+    ├── index.ts             # 路由入口（纯规则评分，同步）
     ├── rules.ts             # 规则引擎（14 维加权评分）
-    ├── ai-classifier.ts     # AI 分类器（多语言，LLM 调用）
     ├── selector.ts          # 层级 → 模型选择 + 费用估算
     ├── config.ts            # 默认路由配置
     └── types.ts             # 路由类型定义
@@ -233,16 +220,16 @@ src/
   → 费用: $0.0003 vs Opus 4.6 $0.025 = 节省 98.8%
 
 "帮我写一个 React 组件"（一般编码）
-  → 规则引擎: MEDIUM → deepseek/deepseek-v3.2
-  → 费用: $0.0003 vs Opus 4.6 $0.025 = 节省 98.8%
+  → 规则引擎: MEDIUM → google/gemini-3-flash-preview
+  → 费用: $0.0002 vs Opus 4.6 $0.025 = 节省 99.2%
 
 "设计一个分布式消息队列的架构"（复杂任务）
   → 规则引擎: COMPLEX → anthropic/claude-sonnet-4.5
   → 费用: $0.045 vs Opus 4.6 $0.25 = 节省 82%
 
 "证明 √2 是无理数"（推理）
-  → 规则引擎: REASONING → openai/o3
-  → 费用: $0.041 vs Opus 4.6 $0.25 = 节省 83.6%
+  → 规则引擎: REASONING → deepseek/deepseek-v3.2-thinking
+  → 费用: $0.0003 vs Opus 4.6 $0.25 = 节省 99.9%
 ```
 
 ## 开发
@@ -269,7 +256,7 @@ npm run build
 
 ```bash
 curl http://localhost:8403/health
-# {"status":"ok","provider":"zenmux","models":94,"aiClassifier":true}
+# {"status":"ok","provider":"zenmux","models":94}
 ```
 
 ## 作者

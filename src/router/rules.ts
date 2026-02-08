@@ -55,19 +55,7 @@ function scoreKeywordMatch(
 }
 
 function scoreMultiStep(text: string): DimensionScore {
-  const patterns = [
-    // en
-    /first.*then/i, /step \d/i,
-    // numbered lists (universal)
-    /\d\.\s/,
-    // zh
-    /首先.*然后/, /第[一二三四五六七八九十\d]步/, /步骤\s*\d/,
-    /第一.*第二/, /先.*再.*最后/,
-    // ja
-    /まず.*次に/, /ステップ\s*\d/,
-    // ko
-    /먼저.*그다음/, /단계\s*\d/,
-  ];
+  const patterns = [/first.*then/i, /step \d/i, /\d\.\s/];
   const hits = patterns.filter((p) => p.test(text));
   if (hits.length > 0) {
     return { name: "multiStepPatterns", score: 0.5, signal: "multi-step" };
@@ -76,8 +64,7 @@ function scoreMultiStep(text: string): DimensionScore {
 }
 
 function scoreQuestionComplexity(prompt: string): DimensionScore {
-  // Count question marks across scripts: ? (en), ？ (zh/ja/ko fullwidth)
-  const count = (prompt.match(/[?？]/g) || []).length;
+  const count = (prompt.match(/\?/g) || []).length;
   if (count > 3) {
     return { name: "questionComplexity", score: 0.5, signal: `${count} questions` };
   }
@@ -88,16 +75,17 @@ function scoreQuestionComplexity(prompt: string): DimensionScore {
 
 export function classifyByRules(
   prompt: string,
-  _systemPrompt: string | undefined,
+  systemPrompt: string | undefined,
   estimatedTokens: number,
   config: ScoringConfig,
 ): ScoringResult {
-  // Only match keywords against user prompt — system prompt is injected by OpenClaw
-  // and contains technical terms (code, function, algorithm, etc.) that skew scoring.
-  const text = prompt.toLowerCase();
+  const text = `${systemPrompt ?? ""} ${prompt}`.toLowerCase();
+  // User prompt only — used for reasoning markers (system prompt shouldn't influence complexity)
+  const userText = prompt.toLowerCase();
 
   // Score all 14 dimensions
   const dimensions: DimensionScore[] = [
+    // Original 8 dimensions
     scoreTokenCount(estimatedTokens, config.tokenCountThresholds),
     scoreKeywordMatch(
       text,
@@ -107,8 +95,9 @@ export function classifyByRules(
       { low: 1, high: 2 },
       { none: 0, low: 0.5, high: 1.0 },
     ),
+    // Reasoning markers use USER prompt only — system prompt "step by step" shouldn't trigger reasoning
     scoreKeywordMatch(
-      text,
+      userText,
       config.reasoningKeywords,
       "reasoningMarkers",
       "reasoning",
@@ -141,6 +130,8 @@ export function classifyByRules(
     ),
     scoreMultiStep(text),
     scoreQuestionComplexity(prompt),
+
+    // 6 new dimensions
     scoreKeywordMatch(
       text,
       config.imperativeVerbs,
@@ -202,13 +193,16 @@ export function classifyByRules(
     weightedScore += d.score * w;
   }
 
-  // Count reasoning markers for override
-  const reasoningMatches = config.reasoningKeywords.filter((kw) => text.includes(kw.toLowerCase()));
+  // Count reasoning markers for override — only check USER prompt, not system prompt
+  // This prevents system prompts with "step by step" from triggering REASONING for simple queries
+  const reasoningMatches = config.reasoningKeywords.filter((kw) =>
+    userText.includes(kw.toLowerCase()),
+  );
 
   // Direct reasoning override: 2+ reasoning markers = high confidence REASONING
   if (reasoningMatches.length >= 2) {
     const confidence = calibrateConfidence(
-      Math.max(weightedScore, 0.3),
+      Math.max(weightedScore, 0.3), // ensure positive for confidence calc
       config.confidenceSteepness,
     );
     return {
@@ -216,19 +210,6 @@ export function classifyByRules(
       tier: "REASONING",
       confidence: Math.max(confidence, 0.85),
       signals,
-    };
-  }
-
-  // Code implementation override: code keywords + imperative verbs = COMPLEX
-  // e.g. "帮我写一个React组件", "implement a REST API", "create a function"
-  const hasCodeSignal = config.codeKeywords.some((kw) => text.includes(kw.toLowerCase()));
-  const hasImperative = config.imperativeVerbs.some((kw) => text.includes(kw.toLowerCase()));
-  if (hasCodeSignal && hasImperative) {
-    return {
-      score: weightedScore,
-      tier: "COMPLEX",
-      confidence: 0.85,
-      signals: [...signals, "code+imperative→COMPLEX"],
     };
   }
 

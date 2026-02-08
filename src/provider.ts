@@ -31,10 +31,10 @@ export function getActiveProxy(): ProxyHandle | null {
  * ZenMux provider plugin definition.
  */
 export const zenmuxProvider: ProviderPlugin = {
-  id: "zenmux",
-  label: "ZenMux",
+  id: "clawzenmux",
+  label: "ClawZenMux",
   docsPath: "https://docs.zenmux.ai",
-  aliases: ["zm"],
+  aliases: ["czm", "zenmux"],
   envVars: ["ZENMUX_API_KEY"],
 
   // Model definitions — dynamically set to proxy URL

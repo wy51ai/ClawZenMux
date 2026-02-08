@@ -11,8 +11,7 @@
  *        → streams response back to pi-ai
  *
  * Features:
- *   - Smart routing: "zenmux/auto" → rules + AI classifier picks cheapest model
- *   - Multi-language: AI classifier handles non-English prompts
+ *   - Smart routing: "clawzenmux/auto" → rules-based scoring picks cheapest model
  *   - Dynamic models: fetches latest models/pricing from ZenMux API
  *   - SSE heartbeat: prevents OpenClaw's timeout for streaming requests
  *   - Response dedup: prevents double-charging on retries
@@ -22,8 +21,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import {
-  routeAsync,
-  AiClassifier,
+  route,
   DEFAULT_ROUTING_CONFIG,
   type RouterOptions,
   type RoutingDecision,
@@ -38,7 +36,7 @@ import { RequestDeduplicator } from "./dedup.js";
 import { fetchWithRetry } from "./retry.js";
 
 const ZENMUX_API = "https://zenmux.ai/api";
-const AUTO_MODEL = "zenmux/auto";
+const AUTO_MODEL = "clawzenmux/auto";
 const AUTO_MODEL_SHORT = "auto";
 const USER_AGENT = "clawzenmux/0.1.0";
 const HEARTBEAT_INTERVAL_MS = 2_000;
@@ -51,8 +49,6 @@ export type ProxyOptions = {
   /** Port to listen on (default: 8403) */
   port?: number;
   routingConfig?: Partial<RoutingConfig>;
-  /** Enable AI classifier for multi-language support (default: true) */
-  useAiClassifier?: boolean;
   /** Request timeout in ms (default: 180000 = 3 minutes). */
   requestTimeoutMs?: number;
   onReady?: (port: number) => void;
@@ -117,16 +113,9 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
 
   const modelPricing = buildModelPricing(models);
 
-  // Create AI classifier for multi-language support
-  const useAi = options.useAiClassifier !== false; // default: true
-  const aiClassifier = useAi
-    ? new AiClassifier(apiBase, apiKey, routingConfig.classifier)
-    : null;
-
   const routerOpts: RouterOptions = {
     config: routingConfig,
     modelPricing,
-    aiClassifier,
   };
 
   // Request deduplicator (shared across all requests)
@@ -141,7 +130,6 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
           status: "ok",
           provider: "zenmux",
           models: models.length,
-          aiClassifier: useAi,
         }),
       );
       return;
@@ -270,8 +258,7 @@ async function proxyRequest(
         const prompt = extractText(lastUserMsg?.content);
         const systemPrompt = extractText(systemMsg?.content) || undefined;
 
-        // Use async route with AI classifier fallback
-        routingDecision = await routeAsync(prompt, systemPrompt, maxTokens, routerOpts);
+        routingDecision = route(prompt, systemPrompt, maxTokens, routerOpts);
 
         // Replace model in body
         parsed.model = routingDecision.model;

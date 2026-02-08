@@ -12,7 +12,7 @@
  *   export ZENMUX_API_KEY=your-key-here
  *
  *   # Use smart routing (auto-picks cheapest model)
- *   openclaw models set zenmux/auto
+ *   openclaw models set clawzenmux/auto
  *
  *   # Or use any specific ZenMux model
  *   openclaw models set openai/gpt-5.2
@@ -42,14 +42,19 @@ function injectModelsConfig(logger: { info: (msg: string) => void }, apiKey?: st
   try {
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
+    // Clean up old "zenmux" key if present
     if (config.models?.providers?.zenmux) {
+      delete config.models.providers.zenmux;
+    }
+
+    if (config.models?.providers?.clawzenmux) {
       return; // Already configured
     }
 
     if (!config.models) config.models = {};
     if (!config.models.providers) config.models.providers = {};
 
-    config.models.providers.zenmux = {
+    config.models.providers.clawzenmux = {
       baseUrl: "http://127.0.0.1:8403/v1",
       api: "openai-completions",
       ...(apiKey ? { apiKey } : {}),
@@ -57,7 +62,7 @@ function injectModelsConfig(logger: { info: (msg: string) => void }, apiKey?: st
     };
 
     writeFileSync(configPath, JSON.stringify(config, null, 2));
-    logger.info("Injected ZenMux models into OpenClaw config");
+    logger.info("Injected ClawZenMux models into OpenClaw config");
   } catch {
     // Silently fail — config injection is best-effort
   }
@@ -97,11 +102,11 @@ function injectAuthProfile(
         }
       }
 
-      if (authProfiles.zenmux) {
+      if (authProfiles.clawzenmux) {
         continue;
       }
 
-      authProfiles.zenmux = {
+      authProfiles.clawzenmux = {
         profileId: "default",
         credential: {
           apiKey: apiKey,
@@ -142,12 +147,10 @@ async function startProxyInBackground(api: OpenClawPluginApi): Promise<void> {
 
   // Resolve config overrides from plugin config
   const routingConfig = api.pluginConfig?.routing as Partial<RoutingConfig> | undefined;
-  const useAiClassifier = api.pluginConfig?.useAiClassifier !== false; // default: true
 
   const proxy = await startProxy({
     apiKey,
     routingConfig,
-    useAiClassifier,
     onReady: (port) => {
       api.logger.info(`ZenMux proxy listening on port ${port}`);
     },
@@ -157,8 +160,7 @@ async function startProxyInBackground(api: OpenClawPluginApi): Promise<void> {
     onRouted: (decision) => {
       const cost = decision.costEstimate.toFixed(4);
       const saved = (decision.savings * 100).toFixed(0);
-      const method = decision.method === "llm" ? " [AI]" : "";
-      api.logger.info(`${decision.tier} → ${decision.model} $${cost} (saved ${saved}%)${method} | ${decision.reasoning}`);
+      api.logger.info(`${decision.tier} → ${decision.model} $${cost} (saved ${saved}%) | ${decision.reasoning}`);
     },
     onModelsSynced: (count) => {
       api.logger.info(`Synced ${count} models from ZenMux API`);
@@ -167,9 +169,8 @@ async function startProxyInBackground(api: OpenClawPluginApi): Promise<void> {
 
   setActiveProxy(proxy);
 
-  const classifierMode = useAiClassifier ? "AI + rules" : "rules only";
   api.logger.info(
-    `ZenMux provider active — ${proxy.baseUrl}/v1 (routing: ${classifierMode})`,
+    `ZenMux provider active — ${proxy.baseUrl}/v1 (routing: rules only)`,
   );
 }
 
@@ -177,7 +178,7 @@ const plugin: OpenClawPluginDefinition = {
   id: "clawzenmux",
   name: "ClawZenMux",
   description:
-    "Smart LLM router via ZenMux — 90+ models, AI-powered routing, multi-language, token cost savings",
+    "Smart LLM router via ZenMux — 90+ models, rules-based routing, token cost savings",
   version: "0.1.0",
 
   register(api: OpenClawPluginApi) {
@@ -198,14 +199,15 @@ const plugin: OpenClawPluginDefinition = {
     if (!api.config.models.providers) {
       api.config.models.providers = {};
     }
-    api.config.models.providers.zenmux = {
+    api.config.models.providers.clawzenmux = {
       baseUrl: "http://127.0.0.1:8403/v1",
       api: "openai-completions",
       ...(apiKey ? { apiKey } : {}),
       models: OPENCLAW_MODELS,
     };
 
-    api.logger.info("ZenMux provider registered (90+ models via smart routing)");
+    api.logger.info(`ClawZenMux provider registered (${OPENCLAW_MODELS.length} models)`);
+    api.logger.info(`Registered model IDs: ${OPENCLAW_MODELS.slice(0, 5).map(m => m.id).join(", ")}...`);
 
     // Start proxy in background (fire-and-forget)
     startProxyInBackground(api).catch((err) => {
@@ -224,7 +226,7 @@ export type { ProxyOptions, ProxyHandle } from "./proxy.js";
 export { zenmuxProvider } from "./provider.js";
 export { OPENCLAW_MODELS, ZENMUX_MODELS, buildProviderModels } from "./models.js";
 export type { ZenMuxModel } from "./models.js";
-export { route, routeAsync, AiClassifier, DEFAULT_ROUTING_CONFIG } from "./router/index.js";
+export { route, DEFAULT_ROUTING_CONFIG } from "./router/index.js";
 export type { RoutingDecision, RoutingConfig, Tier } from "./router/index.js";
 export { fetchModels, invalidateModelCache } from "./model-sync.js";
 export { logUsage } from "./logger.js";

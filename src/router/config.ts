@@ -23,140 +23,395 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
 
   scoring: {
     tokenCountThresholds: { simple: 50, complex: 500 },
+
+    // Multilingual keywords: English + Chinese (中文) + Japanese (日本語) + Russian (Русский)
     codeKeywords: [
-      // universal (language-agnostic code tokens)
-      "function", "class", "import", "def", "SELECT", "async", "await",
-      "const", "let", "var", "return", "```", "=>", "interface", "struct",
-      // zh
-      "代码", "函数", "编程", "接口", "变量", "调试", "报错", "bug",
-      "写一个", "写个", "实现一个", "代码实现",
-      // ja
-      "コード", "関数", "プログラム", "実装", "バグ",
-      // ko
-      "코드", "함수", "프로그래밍", "구현", "버그",
+      // English
+      "function",
+      "class",
+      "import",
+      "def",
+      "SELECT",
+      "async",
+      "await",
+      "const",
+      "let",
+      "var",
+      "return",
+      "```",
+      // Chinese
+      "函数",
+      "类",
+      "导入",
+      "定义",
+      "查询",
+      "异步",
+      "等待",
+      "常量",
+      "变量",
+      "返回",
+      // Japanese
+      "関数",
+      "クラス",
+      "インポート",
+      "非同期",
+      "定数",
+      "変数",
+      // Russian
+      "функция",
+      "класс",
+      "импорт",
+      "запрос",
+      "асинхронный",
+      "константа",
+      "переменная",
     ],
     reasoningKeywords: [
-      // en
-      "prove", "theorem", "derive", "step by step", "chain of thought",
-      "formally", "mathematical", "proof", "logically", "induction",
-      // zh
-      "证明", "定理", "推导", "逐步", "一步一步", "形式化", "数学",
-      "逻辑推理", "归纳法", "演绎",
-      // ja
-      "証明", "定理", "導出", "ステップバイステップ", "論理的",
-      // ko
-      "증명", "정리", "유도", "단계별", "논리적",
+      // English
+      "prove",
+      "theorem",
+      "derive",
+      "step by step",
+      "chain of thought",
+      "formally",
+      "mathematical",
+      "proof",
+      "logically",
+      // Chinese
+      "证明",
+      "定理",
+      "推导",
+      "逐步",
+      "思维链",
+      "形式化",
+      "数学",
+      "逻辑",
+      // Japanese
+      "証明",
+      "定理",
+      "導出",
+      "ステップバイステップ",
+      "論理的",
+      // Russian
+      "доказать",
+      "теорема",
+      "вывести",
+      "шаг за шагом",
+      "цепочка рассуждений",
+      "формально",
+      "математически",
+      "логически",
     ],
     simpleKeywords: [
-      // en
-      "what is", "define", "translate", "hello", "yes or no",
-      "capital of", "how old", "who is", "when was", "thanks",
-      // zh
-      "什么是", "是什么", "定义", "翻译", "你好", "谢谢",
-      "是不是", "多大", "谁是", "是谁", "你是谁", "什么时候", "帮我翻译",
-      "解释一下", "简单介绍", "怎么说", "什么意思",
-      // ja
-      "とは", "意味", "翻訳", "こんにちは", "教えて",
-      "いつ", "だれ", "簡単に",
-      // ko
-      "무엇", "뜻", "번역", "안녕", "설명해",
-      "언제", "누구",
+      // English
+      "what is",
+      "define",
+      "translate",
+      "hello",
+      "yes or no",
+      "capital of",
+      "how old",
+      "who is",
+      "when was",
+      // Chinese
+      "什么是",
+      "定义",
+      "翻译",
+      "你好",
+      "是否",
+      "首都",
+      "多大",
+      "谁是",
+      "何时",
+      // Japanese
+      "とは",
+      "定義",
+      "翻訳",
+      "こんにちは",
+      "はいかいいえ",
+      "首都",
+      "誰",
+      // Russian
+      "что такое",
+      "определение",
+      "перевести",
+      "привет",
+      "да или нет",
+      "столица",
+      "кто такой",
+      "когда",
     ],
     technicalKeywords: [
-      // en
-      "algorithm", "optimize", "architecture", "distributed", "kubernetes",
-      "microservice", "database", "infrastructure", "scalability", "latency",
-      // zh
-      "算法", "优化", "架构", "分布式", "微服务", "数据库",
-      "基础设施", "性能", "并发", "负载均衡", "高可用",
-      // ja
-      "アルゴリズム", "最適化", "アーキテクチャ", "分散", "データベース",
-      // ko
-      "알고리즘", "최적화", "아키텍처", "분산", "데이터베이스",
+      // English
+      "algorithm",
+      "optimize",
+      "architecture",
+      "distributed",
+      "kubernetes",
+      "microservice",
+      "database",
+      "infrastructure",
+      // Chinese
+      "算法",
+      "优化",
+      "架构",
+      "分布式",
+      "微服务",
+      "数据库",
+      "基础设施",
+      // Japanese
+      "アルゴリズム",
+      "最適化",
+      "アーキテクチャ",
+      "分散",
+      "マイクロサービス",
+      "データベース",
+      // Russian
+      "алгоритм",
+      "оптимизировать",
+      "архитектура",
+      "распределённый",
+      "микросервис",
+      "база данных",
+      "инфраструктура",
     ],
     creativeKeywords: [
-      // en
-      "story", "poem", "compose", "brainstorm", "creative", "imagine", "write a",
-      // zh
-      "故事", "诗", "作文", "头脑风暴", "创意", "想象", "写一篇",
-      "小说", "剧本", "文案",
-      // ja
-      "物語", "詩", "作文", "ブレスト", "創造", "想像",
-      // ko
-      "이야기", "시", "작문", "브레인스토밍", "창작", "상상",
+      // English
+      "story",
+      "poem",
+      "compose",
+      "brainstorm",
+      "creative",
+      "imagine",
+      "write a",
+      // Chinese
+      "故事",
+      "诗",
+      "创作",
+      "头脑风暴",
+      "创意",
+      "想象",
+      "写一个",
+      // Japanese
+      "物語",
+      "詩",
+      "作曲",
+      "ブレインストーム",
+      "創造的",
+      "想像",
+      // Russian
+      "история",
+      "стихотворение",
+      "сочинить",
+      "мозговой штурм",
+      "творческий",
+      "представить",
+      "напиши",
     ],
+
+    // New dimension keyword lists (multilingual)
     imperativeVerbs: [
-      // en
-      "build", "create", "implement", "design", "develop",
-      "construct", "generate", "deploy", "configure", "set up",
-      // zh
-      "构建", "创建", "实现", "设计", "开发", "搭建",
-      "生成", "部署", "配置", "编写", "帮我写",
-      // ja
-      "構築", "作成", "実装", "設計", "開発", "生成", "デプロイ",
-      // ko
-      "구축", "생성", "구현", "설계", "개발", "배포",
+      // English
+      "build",
+      "create",
+      "implement",
+      "design",
+      "develop",
+      "construct",
+      "generate",
+      "deploy",
+      "configure",
+      "set up",
+      // Chinese
+      "构建",
+      "创建",
+      "实现",
+      "设计",
+      "开发",
+      "生成",
+      "部署",
+      "配置",
+      "设置",
+      // Japanese
+      "構築",
+      "作成",
+      "実装",
+      "設計",
+      "開発",
+      "生成",
+      "デプロイ",
+      "設定",
+      // Russian
+      "построить",
+      "создать",
+      "реализовать",
+      "спроектировать",
+      "разработать",
+      "сгенерировать",
+      "развернуть",
+      "настроить",
     ],
     constraintIndicators: [
-      // en
-      "under", "at most", "at least", "within", "no more than",
-      "o(", "maximum", "minimum", "limit", "budget",
-      // zh
-      "不超过", "最多", "最少", "以内", "不得超过",
-      "时间复杂度", "空间复杂度", "上限", "下限", "限制", "预算",
-      // ja
-      "以下", "以上", "最大", "最小", "制限", "予算",
-      // ko
-      "이하", "이상", "최대", "최소", "제한", "예산",
+      // English
+      "under",
+      "at most",
+      "at least",
+      "within",
+      "no more than",
+      "o(",
+      "maximum",
+      "minimum",
+      "limit",
+      "budget",
+      // Chinese
+      "不超过",
+      "至少",
+      "最多",
+      "在内",
+      "最大",
+      "最小",
+      "限制",
+      "预算",
+      // Japanese
+      "以下",
+      "最大",
+      "最小",
+      "制限",
+      "予算",
+      // Russian
+      "не более",
+      "как минимум",
+      "максимум",
+      "минимум",
+      "ограничение",
+      "бюджет",
     ],
     outputFormatKeywords: [
-      // universal
-      "json", "yaml", "xml", "table", "csv", "markdown", "schema",
-      // en
-      "format as", "structured",
-      // zh
-      "格式", "表格", "结构化", "输出为", "格式化",
-      // ja
-      "フォーマット", "テーブル", "構造化",
-      // ko
-      "포맷", "테이블", "구조화",
+      // English
+      "json",
+      "yaml",
+      "xml",
+      "table",
+      "csv",
+      "markdown",
+      "schema",
+      "format as",
+      "structured",
+      // Chinese
+      "表格",
+      "格式化为",
+      "结构化",
+      // Japanese
+      "テーブル",
+      "フォーマット",
+      "構造化",
+      // Russian
+      "таблица",
+      "форматировать как",
+      "структурированный",
     ],
     referenceKeywords: [
-      // en
-      "above", "below", "previous", "following", "the docs",
-      "the api", "the code", "earlier", "attached",
-      // zh
-      "上面", "下面", "之前", "如下", "文档", "接口",
-      "代码", "前面", "附件", "参考",
-      // ja
-      "上記", "下記", "前の", "ドキュメント", "添付",
-      // ko
-      "위의", "아래", "이전", "문서", "첨부",
+      // English
+      "above",
+      "below",
+      "previous",
+      "following",
+      "the docs",
+      "the api",
+      "the code",
+      "earlier",
+      "attached",
+      // Chinese
+      "上面",
+      "下面",
+      "之前",
+      "接下来",
+      "文档",
+      "代码",
+      "附件",
+      // Japanese
+      "上記",
+      "下記",
+      "前の",
+      "次の",
+      "ドキュメント",
+      "コード",
+      // Russian
+      "выше",
+      "ниже",
+      "предыдущий",
+      "следующий",
+      "документация",
+      "код",
+      "вложение",
     ],
     negationKeywords: [
-      // en
-      "don't", "do not", "avoid", "never", "without",
-      "except", "exclude", "no longer",
-      // zh
-      "不要", "不能", "避免", "禁止", "除了",
-      "排除", "不可以", "不得", "不许",
-      // ja
-      "しないで", "避ける", "禁止", "除外", "以外",
-      // ko
-      "하지마", "금지", "제외", "피하다",
+      // English
+      "don't",
+      "do not",
+      "avoid",
+      "never",
+      "without",
+      "except",
+      "exclude",
+      "no longer",
+      // Chinese
+      "不要",
+      "避免",
+      "从不",
+      "没有",
+      "除了",
+      "排除",
+      // Japanese
+      "しないで",
+      "避ける",
+      "決して",
+      "なしで",
+      "除く",
+      // Russian
+      "не делай",
+      "избегать",
+      "никогда",
+      "без",
+      "кроме",
+      "исключить",
     ],
     domainSpecificKeywords: [
-      // universal (technical terms used across languages)
-      "quantum", "fpga", "vlsi", "risc-v", "asic", "photonics",
-      "genomics", "proteomics", "topological", "homomorphic",
-      "zero-knowledge", "lattice-based",
-      // zh
-      "量子", "光子", "基因组", "蛋白质组", "拓扑",
-      "同态加密", "零知识证明", "格密码",
-      // ja
-      "量子", "ゲノム", "準同型",
-      // ko
-      "양자", "유전체", "동형암호",
+      // English
+      "quantum",
+      "fpga",
+      "vlsi",
+      "risc-v",
+      "asic",
+      "photonics",
+      "genomics",
+      "proteomics",
+      "topological",
+      "homomorphic",
+      "zero-knowledge",
+      "lattice-based",
+      // Chinese
+      "量子",
+      "光子学",
+      "基因组学",
+      "蛋白质组学",
+      "拓扑",
+      "同态",
+      "零知识",
+      "格密码",
+      // Japanese
+      "量子",
+      "フォトニクス",
+      "ゲノミクス",
+      "トポロジカル",
+      // Russian
+      "квантовый",
+      "фотоника",
+      "геномика",
+      "протеомика",
+      "топологический",
+      "гомоморфный",
+      "с нулевым разглашением",
     ],
 
     // Dimension weights (sum to 1.0)
@@ -179,9 +434,7 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
 
     // Tier boundaries on weighted score axis
     tierBoundaries: {
-      // Only prompts with explicit simple signals (keywords like 你好, 翻译, what is)
-      // should be SIMPLE. Short prompts without clear signals → MEDIUM.
-      simpleMedium: -0.12,
+      simpleMedium: 0.0,
       mediumComplex: 0.15,
       complexReasoning: 0.25,
     },
@@ -189,9 +442,7 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
     // Sigmoid steepness for confidence calibration
     confidenceSteepness: 12,
     // Below this confidence → ambiguous (null tier)
-    // Lowered from 0.7 — short prompts (especially Chinese) have small score distances,
-    // high threshold causes almost everything to fall through to AI/default MEDIUM.
-    confidenceThreshold: 0.55,
+    confidenceThreshold: 0.7,
   },
 
   tiers: {
@@ -200,16 +451,16 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
       fallback: ["google/gemini-2.5-flash"],
     },
     MEDIUM: {
-      primary: "deepseek/deepseek-v3.2",
-      fallback: ["google/gemini-2.5-flash"],
+      primary: "google/gemini-3-flash-preview",
+      fallback: ["deepseek/deepseek-v3.2"],
     },
     COMPLEX: {
       primary: "anthropic/claude-sonnet-4.5",
       fallback: ["anthropic/claude-sonnet-4", "openai/gpt-4o"],
     },
     REASONING: {
-      primary: "openai/gpt-5.2",
-      fallback: ["google/gemini-3-pro-preview"],
+      primary: "deepseek/deepseek-v3.2-thinking",
+      fallback: ["openai/gpt-5.2"],
     },
   },
 
