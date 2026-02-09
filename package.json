@@ -1,6 +1,6 @@
 {
   "name": "@wy51ai/clawzenmux",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Smart LLM router via ZenMux — 100+ models, intelligent routing, token cost savings.",
   "type": "module",
   "main": "dist/index.js",
