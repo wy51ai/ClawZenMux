@@ -42,7 +42,7 @@ const AUTO_MODEL_SHORT = "auto";
 const USER_AGENT = "clawzenmux/0.1.0";
 const HEARTBEAT_INTERVAL_MS = 2_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 180_000; // 3 minutes
-const DEFAULT_PORT = 8403;
+const DEFAULT_PORT = 8513;
 const TIER_OVERRIDE_REGEX = /\bUSE\s+(SIMPLE|MEDIUM|COMPLEX|REASONING)\b/i;
 const TIER_OVERRIDE_REGEX_GLOBAL = /\bUSE\s+(SIMPLE|MEDIUM|COMPLEX|REASONING)\b/gi;
 
@@ -106,7 +106,7 @@ function extractAndStripForcedTier(message: ChatMessage | undefined): Tier | und
 export type ProxyOptions = {
   apiKey: string;
   apiBase?: string;
-  /** Port to listen on (default: 8403) */
+  /** Port to listen on (default: 8513) */
   port?: number;
   routingConfig?: Partial<RoutingConfig>;
   /** Request timeout in ms (default: 180000 = 3 minutes). */
@@ -225,7 +225,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     }
   });
 
-  // Listen on requested port (default: 8403)
+  // Listen on requested port (default: 8513)
   const listenPort = options.port ?? DEFAULT_PORT;
 
   return new Promise<ProxyHandle>((resolve, reject) => {

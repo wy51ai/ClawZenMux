@@ -9,3 +9,5 @@ dist/
 .claude/
 .codex/
 .gemini/
+.tests/
+.npm-cache/

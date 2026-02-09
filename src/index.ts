@@ -55,7 +55,7 @@ function injectModelsConfig(logger: { info: (msg: string) => void }, apiKey?: st
     if (!config.models.providers) config.models.providers = {};
 
     config.models.providers.clawzenmux = {
-      baseUrl: "http://127.0.0.1:8403/v1",
+      baseUrl: "http://127.0.0.1:8513/v1",
       api: "openai-completions",
       ...(apiKey ? { apiKey } : {}),
       models: OPENCLAW_MODELS,
@@ -200,7 +200,7 @@ const plugin: OpenClawPluginDefinition = {
       api.config.models.providers = {};
     }
     api.config.models.providers.clawzenmux = {
-      baseUrl: "http://127.0.0.1:8403/v1",
+      baseUrl: "http://127.0.0.1:8513/v1",
       api: "openai-completions",
       ...(apiKey ? { apiKey } : {}),
       models: OPENCLAW_MODELS,

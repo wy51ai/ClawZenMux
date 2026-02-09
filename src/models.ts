@@ -510,7 +510,7 @@ export const OPENCLAW_MODELS: ModelDefinitionConfig[] = ZENMUX_MODELS.map(toOpen
 /**
  * Build a ModelProviderConfig for ZenMux.
  *
- * @param baseUrl - The proxy's local base URL (e.g., "http://127.0.0.1:8403")
+ * @param baseUrl - The proxy's local base URL (e.g., "http://127.0.0.1:8513")
  */
 export function buildProviderModels(baseUrl: string): ModelProviderConfig {
   return {

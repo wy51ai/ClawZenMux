@@ -15,7 +15,7 @@ OpenClaw Agent
   │
   ▼  POST /v1/chat/completions  { model: "clawzenmux/auto", messages: [...] }
   │
-  ▼  localhost:8403 (ClawZenMux 本地代理)
+  ▼  localhost:8513 (ClawZenMux 本地代理)
   │
   ├─ 1. 解析请求，提取用户 prompt
   ├─ 2. 规则引擎评分 (14 维加权，<1ms，零成本)
@@ -207,7 +207,7 @@ USE COMPLEX 设计一个分布式消息队列的架构
 src/
 ├── index.ts                 # 插件入口，注册 provider，启动代理
 ├── provider.ts              # OpenClaw provider 定义
-├── proxy.ts                 # 本地 HTTP 代理服务器 (port 8403)
+├── proxy.ts                 # 本地 HTTP 代理服务器 (port 8513)
 ├── models.ts                # 内置模型目录（100+ 模型 + 定价）
 ├── model-sync.ts            # 动态模型同步（从 ZenMux API 拉取最新）
 ├── auth.ts                  # API Key 解析（config / 文件 / 环境变量 / 向导）
@@ -255,7 +255,7 @@ npm run build
 代理启动后可通过 HTTP 检查状态：
 
 ```bash
-curl http://localhost:8403/health
+curl http://localhost:8513/health
 # {"status":"ok","provider":"zenmux","models":94}
 ```
 
