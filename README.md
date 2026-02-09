@@ -2,7 +2,7 @@
 
 **[English](README_EN.md)** | 中文
 
-OpenClaw 智能 LLM 路由插件 —— 通过 [ZenMux](https://zenmux.ai) 统一网关调用 90+ 模型，自动选择最便宜的模型处理请求，节省 78-96% 的 token 费用。
+OpenClaw 智能 LLM 路由插件 —— 通过 [ZenMux](https://zenmux.ai) 统一网关调用 100+ 模型，自动选择最便宜的模型处理请求，节省 78-96% 的 token 费用。
 
 > **注意**：这是一个社区第三方插件，非 OpenClaw 或 ZenMux 官方出品。欢迎各位大佬提交PR改进。
 >

@@ -1,7 +1,7 @@
 /**
  * ZenMux Model Definitions for OpenClaw
  *
- * Maps ZenMux's 90+ AI models to OpenClaw's ModelDefinitionConfig format.
+ * Maps ZenMux's 100+ AI models to OpenClaw's ModelDefinitionConfig format.
  * All models use the "openai-completions" API since ZenMux is OpenAI-compatible.
  *
  * Pricing is in USD per 1M tokens.

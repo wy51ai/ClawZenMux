@@ -1,7 +1,7 @@
 {
   "id": "clawzenmux",
   "name": "ClawZenMux",
-  "description": "Smart LLM router via ZenMux — 90+ models, rules-based routing, token cost savings",
+  "description": "Smart LLM router via ZenMux — 100+ models, rules-based routing, token cost savings",
   "configSchema": {
     "type": "object",
     "properties": {

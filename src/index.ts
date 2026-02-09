@@ -1,7 +1,7 @@
 /**
  * @wy51ai/clawzenmux
  *
- * Smart LLM router for OpenClaw via ZenMux — 90+ models, AI-powered routing,
+ * Smart LLM router for OpenClaw via ZenMux — 100+ models, AI-powered routing,
  * multi-language support, token cost savings.
  *
  * Usage:
@@ -178,7 +178,7 @@ const plugin: OpenClawPluginDefinition = {
   id: "clawzenmux",
   name: "ClawZenMux",
   description:
-    "Smart LLM router via ZenMux — 90+ models, rules-based routing, token cost savings",
+    "Smart LLM router via ZenMux — 100+ models, rules-based routing, token cost savings",
   version: "0.1.0",
 
   register(api: OpenClawPluginApi) {
