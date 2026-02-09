@@ -25,7 +25,7 @@ OpenClaw Agent
   └─ 6. 记录使用日志
 ```
 
-**核心思路**：简单问题用便宜模型（DeepSeek $0.28/M），中等问题用均衡模型（Gemini 3 Flash），复杂问题用强力模型（Claude $3/M），推理问题用专业模型（DeepSeek Thinking）。用户只需设置 `clawzenmux/auto`，路由器自动判断。
+**核心思路**：简单问题用便宜模型（DeepSeek $0.28/M），中等问题用均衡模型（Gemini 3 Flash），复杂问题用强力模型（Claude $3/M），推理问题用专业模型（DeepSeek Reasoner）。用户只需设置 `clawzenmux/auto`，路由器自动判断。
 
 ## 快速开始
 
@@ -36,7 +36,7 @@ OpenClaw Agent
 ### 2. 安装插件
 
 ```bash
-openclaw plugin install @wy51ai/clawzenmux
+openclaw plugins install @wy51ai/clawzenmux
 ```
 
 ### 3. 配置 API Key（三种方式，任选其一）
@@ -85,12 +85,12 @@ USE COMPLEX 设计一个分布式消息队列的架构
 
 ### 四层分级
 
-| 层级 | 默认模型 | 价格 ($/M tokens) | 适用场景 |
+| 层级 | 默认模型 | 价格参考 ($/M tokens) | 适用场景 |
 |------|---------|-------------------|----------|
-| **SIMPLE** | deepseek/deepseek-v3.2 | $0.28 / $0.43 | 简单问答、翻译、定义 |
-| **MEDIUM** | google/gemini-3-flash-preview | $0.15 / $0.60 | 一般编码、摘要、解释 |
+| **SIMPLE** | deepseek/deepseek-chat | $0.28 / $0.43 | 简单问答、翻译、定义 |
+| **MEDIUM** | google/gemini-3-flash-preview | $0.5 / $3 | 一般编码、摘要、解释 |
 | **COMPLEX** | anthropic/claude-sonnet-4.5 | $3.00 / $15.00 | 复杂代码、架构设计、多步分析 |
-| **REASONING** | deepseek/deepseek-v3.2-thinking | $0.28 / $0.43 | 数学证明、逻辑推导、定理证明 |
+| **REASONING** | deepseek/deepseek-reasoner | $0.28 / $0.42 | 数学证明、逻辑推导、定理证明 |
 
 ### 规则引擎（<1ms，免费）
 
@@ -147,19 +147,19 @@ USE COMPLEX 设计一个分布式消息队列的架构
           "routing": {
             "tiers": {
               "SIMPLE": {
-                "primary": "deepseek/deepseek-v3.2",
+                "primary": "deepseek/deepseek-chat",
                 "fallback": ["google/gemini-2.5-flash"]
               },
               "MEDIUM": {
                 "primary": "google/gemini-3-flash-preview",
-                "fallback": ["deepseek/deepseek-v3.2"]
+                "fallback": ["deepseek/deepseek-chat"]
               },
               "COMPLEX": {
                 "primary": "anthropic/claude-sonnet-4.5",
                 "fallback": ["anthropic/claude-sonnet-4", "openai/gpt-4o"]
               },
               "REASONING": {
-                "primary": "deepseek/deepseek-v3.2-thinking",
+                "primary": "deepseek/deepseek-reasoner",
                 "fallback": ["openai/gpt-5.2"]
               }
             }
@@ -189,14 +189,14 @@ USE COMPLEX 设计一个分布式消息队列的架构
 
 ## 支持的模型
 
-通过 ZenMux 平台访问 90+ 模型，包括：
+通过 ZenMux 平台访问 100+ 模型，包括：
 
 | 提供商 | 模型 |
 |--------|------|
 | **OpenAI** | GPT-5.2 Pro, GPT-5.2, GPT-5.1, GPT-5, GPT-5 Mini/Nano, GPT-4.1, o3, o4-mini, Codex |
 | **Anthropic** | Claude Opus 4.6/4.5, Claude Sonnet 4.5/4, Claude Haiku 4.5 |
 | **Google** | Gemini 3 Pro/Flash Preview, Gemini 2.5 Pro/Flash/Flash-Lite |
-| **DeepSeek** | V3.2, V3.2 Thinking |
+| **DeepSeek** | V3.2, Reasoner |
 | **xAI** | Grok 4.1 Fast, Grok 4 Fast, Grok 3 |
 | **阿里** | Qwen3-Max, Qwen3-Coder-Plus, Qwen3-VL-Plus |
 | **智谱** | GLM 4.7, GLM 4.6 |
@@ -213,7 +213,7 @@ src/
 ├── index.ts                 # 插件入口，注册 provider，启动代理
 ├── provider.ts              # OpenClaw provider 定义
 ├── proxy.ts                 # 本地 HTTP 代理服务器 (port 8403)
-├── models.ts                # 内置模型目录（90+ 模型 + 定价）
+├── models.ts                # 内置模型目录（100+ 模型 + 定价）
 ├── model-sync.ts            # 动态模型同步（从 ZenMux API 拉取最新）
 ├── auth.ts                  # API Key 解析（config / 文件 / 环境变量 / 向导）
 ├── types.ts                 # OpenClaw 插件类型定义
@@ -236,25 +236,6 @@ src/
 - **重试机制**：429/502/503/504 自动指数退避重试，支持 Retry-After header
 - **使用日志**：每次请求记录为 JSONL 行 (`~/.openclaw/zenmux/logs/usage-YYYY-MM-DD.jsonl`)
 
-## 费用节省示例
-
-```
-"什么是量子计算？"（简单问题）
-  → 规则引擎: SIMPLE → deepseek/deepseek-v3.2
-  → 费用: $0.0003 vs Opus 4.6 $0.025 = 节省 98.8%
-
-"帮我写一个 React 组件"（一般编码）
-  → 规则引擎: MEDIUM → google/gemini-3-flash-preview
-  → 费用: $0.0002 vs Opus 4.6 $0.025 = 节省 99.2%
-
-"设计一个分布式消息队列的架构"（复杂任务）
-  → 规则引擎: COMPLEX → anthropic/claude-sonnet-4.5
-  → 费用: $0.045 vs Opus 4.6 $0.25 = 节省 82%
-
-"证明 √2 是无理数"（推理）
-  → 规则引擎: REASONING → deepseek/deepseek-v3.2-thinking
-  → 费用: $0.0003 vs Opus 4.6 $0.25 = 节省 99.9%
-```
 
 ## 开发
 

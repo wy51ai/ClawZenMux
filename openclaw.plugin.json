@@ -20,7 +20,7 @@
               "SIMPLE": {
                 "type": "object",
                 "properties": {
-                  "primary": { "type": "string", "description": "Model ID for simple tasks (e.g. deepseek/deepseek-v3.2)" },
+                  "primary": { "type": "string", "description": "Model ID for simple tasks (e.g. deepseek/deepseek-chat)" },
                   "fallback": { "type": "array", "items": { "type": "string" }, "description": "Fallback models" }
                 }
               },

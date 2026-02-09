@@ -447,19 +447,19 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
 
   tiers: {
     SIMPLE: {
-      primary: "deepseek/deepseek-v3.2",
+      primary: "deepseek/deepseek-chat",
       fallback: ["google/gemini-2.5-flash"],
     },
     MEDIUM: {
       primary: "google/gemini-3-flash-preview",
-      fallback: ["deepseek/deepseek-v3.2"],
+      fallback: ["deepseek/deepseek-chat"],
     },
     COMPLEX: {
       primary: "anthropic/claude-sonnet-4.5",
       fallback: ["anthropic/claude-sonnet-4", "openai/gpt-4o"],
     },
     REASONING: {
-      primary: "deepseek/deepseek-v3.2-thinking",
+      primary: "deepseek/deepseek-reasoner",
       fallback: ["openai/gpt-5.2"],
     },
   },

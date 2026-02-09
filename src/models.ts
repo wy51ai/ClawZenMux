@@ -243,8 +243,8 @@ export const ZENMUX_MODELS: ZenMuxModel[] = [
   {
     id: "google/gemini-3-flash-preview",
     name: "Gemini 3 Flash Preview",
-    inputPrice: 0.0,
-    outputPrice: 0.0,
+    inputPrice: 0.5,
+    outputPrice: 3.0,
     contextWindow: 1_050_000,
     maxOutput: 65_536,
     vision: true,
@@ -279,8 +279,8 @@ export const ZENMUX_MODELS: ZenMuxModel[] = [
 
   // ─── DeepSeek ───
   {
-    id: "deepseek/deepseek-v3.2",
-    name: "DeepSeek V3.2",
+    id: "deepseek/deepseek-chat",
+    name: "DeepSeek Chat",
     inputPrice: 0.28,
     outputPrice: 0.43,
     contextWindow: 128_000,
@@ -288,10 +288,10 @@ export const ZENMUX_MODELS: ZenMuxModel[] = [
     reasoning: true,
   },
   {
-    id: "deepseek/deepseek-v3.2-thinking",
-    name: "DeepSeek V3.2 Thinking",
+    id: "deepseek/deepseek-reasoner",
+    name: "DeepSeek Reasoner",
     inputPrice: 0.28,
-    outputPrice: 0.43,
+    outputPrice: 0.42,
     contextWindow: 128_000,
     maxOutput: 8_192,
     reasoning: true,
