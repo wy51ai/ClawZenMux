@@ -12,7 +12,7 @@ export type Tier = "SIMPLE" | "MEDIUM" | "COMPLEX" | "REASONING";
 
 export type ScoringResult = {
   score: number; // weighted float (roughly [-0.3, 0.4])
-  tier: Tier | null; // null = ambiguous, needs fallback classifier
+  tier: Tier | null; // null = ambiguous, needs LLM classifier
   confidence: number; // sigmoid-calibrated [0, 1]
   signals: string[];
 };
@@ -30,7 +30,6 @@ export type RoutingDecision = {
 
 export type TierConfig = {
   primary: string;
-  fallback: string[];
 };
 
 export type ScoringConfig = {

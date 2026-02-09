@@ -147,20 +147,16 @@ USE COMPLEX 设计一个分布式消息队列的架构
           "routing": {
             "tiers": {
               "SIMPLE": {
-                "primary": "deepseek/deepseek-chat",
-                "fallback": ["google/gemini-2.5-flash"]
+                "primary": "deepseek/deepseek-chat"
               },
               "MEDIUM": {
-                "primary": "google/gemini-3-flash-preview",
-                "fallback": ["deepseek/deepseek-chat"]
+                "primary": "google/gemini-3-flash-preview"
               },
               "COMPLEX": {
-                "primary": "anthropic/claude-sonnet-4.5",
-                "fallback": ["anthropic/claude-sonnet-4", "openai/gpt-4o"]
+                "primary": "anthropic/claude-sonnet-4.5"
               },
               "REASONING": {
-                "primary": "deepseek/deepseek-reasoner",
-                "fallback": ["openai/gpt-5.2"]
+                "primary": "deepseek/deepseek-reasoner"
               }
             }
           }
@@ -177,7 +173,6 @@ USE COMPLEX 设计一个分布式消息队列的架构
 |------|------|--------|------|
 | `apiKey` | string | — | ZenMux API Key，也可用环境变量 `ZENMUX_API_KEY` |
 | `routing.tiers.{TIER}.primary` | string | 见上表 | 该层级的首选模型 |
-| `routing.tiers.{TIER}.fallback` | string[] | 见上表 | 首选不可用时的备选模型 |
 
 ## 动态模型同步
 

@@ -55,10 +55,3 @@ export function selectModel(
   };
 }
 
-/**
- * Get the ordered fallback chain for a tier: [primary, ...fallbacks].
- */
-export function getFallbackChain(tier: Tier, tierConfigs: Record<Tier, TierConfig>): string[] {
-  const config = tierConfigs[tier];
-  return [config.primary, ...config.fallback];
-}

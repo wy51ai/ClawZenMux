@@ -3,7 +3,7 @@
  *
  * Scores a request across 14 weighted dimensions and maps the aggregate
  * score to a tier using configurable boundaries. Confidence is calibrated
- * via sigmoid — low confidence triggers the fallback classifier.
+ * via sigmoid — low confidence triggers the LLM classifier.
  *
  * Handles 70-80% of requests in < 1ms with zero cost.
  */

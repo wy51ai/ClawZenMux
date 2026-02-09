@@ -20,29 +20,25 @@
               "SIMPLE": {
                 "type": "object",
                 "properties": {
-                  "primary": { "type": "string", "description": "Model ID for simple tasks (e.g. deepseek/deepseek-chat)" },
-                  "fallback": { "type": "array", "items": { "type": "string" }, "description": "Fallback models" }
+                  "primary": { "type": "string", "description": "Model ID for simple tasks (e.g. deepseek/deepseek-chat)" }
                 }
               },
               "MEDIUM": {
                 "type": "object",
                 "properties": {
-                  "primary": { "type": "string", "description": "Model ID for medium tasks" },
-                  "fallback": { "type": "array", "items": { "type": "string" } }
+                  "primary": { "type": "string", "description": "Model ID for medium tasks" }
                 }
               },
               "COMPLEX": {
                 "type": "object",
                 "properties": {
-                  "primary": { "type": "string", "description": "Model ID for complex tasks" },
-                  "fallback": { "type": "array", "items": { "type": "string" } }
+                  "primary": { "type": "string", "description": "Model ID for complex tasks" }
                 }
               },
               "REASONING": {
                 "type": "object",
                 "properties": {
-                  "primary": { "type": "string", "description": "Model ID for reasoning tasks" },
-                  "fallback": { "type": "array", "items": { "type": "string" } }
+                  "primary": { "type": "string", "description": "Model ID for reasoning tasks" }
                 }
               }
             }
