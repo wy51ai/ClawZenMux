@@ -2,11 +2,7 @@
 
 English | **[中文](README.md)**
 
-Smart LLM routing plugin for OpenClaw — access 100+ models through [ZenMux](https://zenmux.ai) unified gateway, automatically select the cheapest model for each request, saving 78-96% on token costs.
-
-> **Note**: This is a community third-party plugin, not officially maintained by OpenClaw or ZenMux. PRs are welcome!
->
-> This plugin is built upon the [ClawRouter](https://github.com/BlockRunAI/ClawRouter) architecture, removing blockchain/x402 payment in favor of ZenMux unified gateway + API Key auth for a lighter, simpler setup. Thanks to the ClawRouter author for open-sourcing the project!
+OpenClaw smart LLM routing plugin — use the [ZenMux](https://zenmux.ai) unified gateway to access 100+ models, automatically choose the cheapest model for each request, and save up to 78-98% on token costs.
 
 ## How It Works
 
@@ -15,31 +11,25 @@ OpenClaw Agent
   │
   ▼  POST /v1/chat/completions  { model: "clawzenmux/auto", messages: [...] }
   │
-  ▼  localhost:8513 (ClawZenMux Local Proxy)
+  ▼  localhost:8513 (ClawZenMux local proxy)
   │
-  ├─ 1. Parse request, extract user prompt
-  ├─ 2. Rule engine scoring (14-dim weighted, <1ms, zero cost)
-  ├─ 3. Select cheapest model based on complexity
-  ├─ 4. Replace model field, forward to ZenMux API
+  ├─ 1. Parse request and extract user prompt
+  ├─ 2. Rule engine scoring (14-dimension weighted, <1ms, zero cost)
+  ├─ 3. Select the cheapest model based on complexity
+  ├─ 4. Replace the `model` field and forward to ZenMux API
   ├─ 5. Stream response back to Agent
-  └─ 6. Log usage
+  └─ 6. Record usage logs
 ```
 
-**Core idea**: Simple questions use cheap models (DeepSeek $0.28/M), medium questions use balanced models (Gemini 3 Flash), complex questions use powerful models (Claude $3/M), reasoning questions use specialized models (DeepSeek Reasoner). Just set `clawzenmux/auto` and the router decides automatically.
+**Core idea**: Simple questions use cheap models (DeepSeek $0.28/M), medium questions use balanced models (Gemini 3 Flash), complex questions use stronger models (Claude $3/M), and reasoning questions use specialized models (DeepSeek Reasoner). You only need to set `clawzenmux/auto`, and the router decides automatically.
 
 ## Quick Start
 
 ### 1. Get a ZenMux API Key
 
-Sign up at [zenmux.ai](https://zenmux.ai) and create a key under Console > API Keys.
+Go to [zenmux.ai](https://zenmux.ai/invite/U5LELA), sign up, and create an API key. A paid plan is recommended for better savings.
 
-### 2. Install the Plugin
-
-```bash
-openclaw plugins install @wy51ai/clawzenmux
-```
-
-### 3. Configure API Key (pick one)
+### 2. Configure API Key (choose one of three methods)
 
 ```bash
 # Option 1: Environment variable (recommended)
@@ -48,20 +38,40 @@ export ZENMUX_API_KEY=your-key-here
 # Option 2: Save to file
 echo "your-key-here" > ~/.openclaw/zenmux/api.key
 
-# Option 3: In openclaw.json
-# See "Configuration" section below
+# Option 3: Configure in openclaw.json
+# See the "Configuration" section below.
+# If you use Option 3, configure it after plugin installation.
 ```
+
+### 3. Install the Plugin
+
+```bash
+openclaw plugins install @wy51ai/clawzenmux
+```
+
+### Installation Warning (OpenClaw security prompt)
+
+During installation, OpenClaw may show:
+
+`WARNING: Plugin "clawzenmux" contains dangerous code patterns: Environment variable access combined with network send — possible credential harvesting`
+
+This appears because the plugin reads `ZENMUX_API_KEY` (environment variable) and sends network requests, which triggers a generic security rule. In this plugin, this behavior is only used to:
+
+- Put the API key in the `Authorization: Bearer ...` request header
+- Call the official ZenMux endpoint `https://zenmux.ai/api` (for example, `/v1/chat/completions` and `/v1/models`)
+
+The plugin does not upload your API key to any third-party service. If you do not want to use environment variables, you can use `~/.openclaw/zenmux/api.key` or `openclaw.json` instead (see below).
 
 ### 4. Use Smart Routing
 
 ```bash
-# Auto-select the best model
+# Automatically select the optimal model
 openclaw models set clawzenmux/auto
 ```
 
-### 5. Prompt-Based Tier Override (Optional)
+### 5. Prompt-Based Forced Routing (Optional)
 
-When using `clawzenmux/auto`, you can add a directive in your message to force a tier:
+When using `clawzenmux/auto`, you can add a control directive in the user message to force a tier:
 
 ```text
 USE SIMPLE
@@ -77,16 +87,16 @@ USE COMPLEX Design a distributed message queue architecture
 ```
 
 Notes:
-- Only takes effect when `model=clawzenmux/auto` (or `auto`)
-- The proxy strips the `USE ...` directive before forwarding, so it won't pollute the actual prompt
-- If no directive is present, the default rule engine is used
+- This directive only takes effect when `model=clawzenmux/auto` (or `auto`)
+- The proxy removes the `USE ...` directive text before forwarding, so it does not pollute the actual prompt
+- If no directive is present, it continues to use the default rule engine
 
 ## Smart Routing Details
 
 ### Four-Tier Classification
 
-| Tier | Default Model | Price ($/M tokens) | Use Case |
-|------|--------------|-------------------|----------|
+| Tier | Default Model | Price reference ($/M tokens) | Use case |
+|------|--------------|------------------------------|----------|
 | **SIMPLE** | deepseek/deepseek-chat | $0.28 / $0.43 | Simple Q&A, translation, definitions |
 | **MEDIUM** | google/gemini-3-flash-preview | $0.5 / $3 | General coding, summaries, explanations |
 | **COMPLEX** | anthropic/claude-sonnet-4.5 | $3.00 / $15.00 | Complex code, architecture design, multi-step analysis |
@@ -94,18 +104,18 @@ Notes:
 
 ### Rule Engine (<1ms, Free)
 
-100% local rule-based scoring, no external API calls. Scores prompts across 14 weighted dimensions and maps the total score to a tier. Keywords cover English, Chinese, Japanese, and Russian:
+100% local rule-based scoring with no external API calls. It scores prompts on 14 weighted dimensions and maps the total score to a tier. Keywords cover English, Chinese, Japanese, and Russian:
 
-| Dimension | Weight | Detection | Multilingual Keywords |
-|-----------|--------|-----------|----------------------|
+| Dimension | Weight | Detection target | Multilingual keyword examples |
+|------|------|------|------|
 | Reasoning markers | 0.18 | Proof/deduction prompts | prove, theorem / 证明, 推导 / 証明, 定理 / доказать |
 | Code presence | 0.15 | Code-related content | function, class, \`\`\` / 函数, 类 / 関数 / функция |
-| Simple indicators | 0.12 | Simple question markers | what is, hello / 什么是, 你好 / とは / что такое |
+| Simple indicators | 0.12 | Simple-question markers | what is, hello / 什么是, 你好 / とは / что такое |
 | Multi-step patterns | 0.12 | Multi-step tasks | first...then, step 1, 1. 2. 3. |
 | Technical terms | 0.10 | Technical vocabulary | algorithm / 算法 / アルゴリズム / алгоритм |
 | Token count | 0.08 | Input length | <50 tokens → simple, >500 → complex |
 | Creative markers | 0.05 | Creative writing | story, poem / 故事, 诗 / 物語 / история |
-| Question complexity | 0.05 | Multiple question marks | More than 3 ? |
+| Question complexity | 0.05 | Multiple question marks | More than 3 `?` |
 | Constraints | 0.04 | Limiting conditions | at most / 不超过 / 以下 / не более |
 | Command verbs | 0.03 | Build instructions | build, create / 构建, 创建 / 構築 / создать |
 | Output format | 0.03 | Structured output | json, yaml / 表格 / テーブル / таблица |
@@ -122,20 +132,19 @@ Total < 0.0   → SIMPLE
 0.15 ~ 0.25   → COMPLEX
 ≥ 0.25        → REASONING
 
-Special rules: 2+ reasoning keywords hit → directly classified as REASONING
-Architecture signals (architecture/架构 + distributed/message queue/sharding/failover/QPS/multi-tenant, etc.) → directly classified as COMPLEX
+Special rule: 2+ reasoning keyword hits → directly classified as REASONING
 Confidence < 0.6 → marked as "ambiguous", falls back to default tier (MEDIUM)
 ```
 
 ### Override Rules
 
-- **Large context** (>100k tokens) → forced COMPLEX
-- **Structured output** (system prompt contains json/structured/schema) → minimum MEDIUM
+- **Large context** (>100k tokens) → force COMPLEX
+- **Structured output** (system prompt includes json/structured/schema) → minimum MEDIUM
 - **Ambiguous classification** → default MEDIUM
 
 ## Configuration
 
-Configure the plugin in `~/.openclaw/openclaw.json`:
+If you need custom models for each tier, configure the plugin in `~/.openclaw/openclaw.json`. Note: if this configuration is enabled, `apiKey` must be provided in this config:
 
 ```json
 {
@@ -170,67 +179,22 @@ Configure the plugin in `~/.openclaw/openclaw.json`:
 ### Configuration Options
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `apiKey` | string | — | ZenMux API Key, or use env var `ZENMUX_API_KEY` |
-| `routing.tiers.{TIER}.primary` | string | See table above | Primary model for the tier |
+|------|------|------|------|
+| `apiKey` | string | — | ZenMux API Key |
+| `routing.tiers.{TIER}.primary` | string | See table above | Primary model for that tier |
 
 ## Dynamic Model Sync
 
-On startup, the plugin calls the ZenMux `GET /v1/models` API to fetch the latest model list and pricing:
+At startup, the plugin calls ZenMux `GET /v1/models` API to fetch the latest model list and pricing:
 
-- 30-minute cache to avoid excessive requests
-- Automatic switch to built-in static model catalog when the API is unavailable
-- Ensures pricing info is always up to date
-
-## Supported Models
-
-Access 100+ models through the ZenMux platform, including:
-
-| Provider | Models |
-|----------|--------|
-| **OpenAI** | GPT-5.2 Pro, GPT-5.2, GPT-5.1, GPT-5, GPT-5 Mini/Nano, GPT-4.1, o3, o4-mini, Codex |
-| **Anthropic** | Claude Opus 4.6/4.5, Claude Sonnet 4.5/4, Claude Haiku 4.5 |
-| **Google** | Gemini 3 Pro/Flash Preview, Gemini 2.5 Pro/Flash/Flash-Lite |
-| **DeepSeek** | V3.2, Reasoner |
-| **xAI** | Grok 4.1 Fast, Grok 4 Fast, Grok 3 |
-| **Alibaba** | Qwen3-Max, Qwen3-Coder-Plus, Qwen3-VL-Plus |
-| **Zhipu** | GLM 4.7, GLM 4.6 |
-| **Moonshot** | Kimi K2 Thinking, Kimi K2.5 |
-| **Mistral** | Mistral Large 3 |
-| **Baidu** | ERNIE-5.0 Thinking Preview |
-| **ByteDance** | Doubao-Seed-Code |
-| **Xiaomi** | MiMo-V2-Flash |
-
-## Project Structure
-
-```
-src/
-├── index.ts                 # Plugin entry, register provider, start proxy
-├── provider.ts              # OpenClaw provider definition
-├── proxy.ts                 # Local HTTP proxy server (port 8513)
-├── models.ts                # Built-in model catalog (100+ models + pricing)
-├── model-sync.ts            # Dynamic model sync (fetch latest from ZenMux API)
-├── auth.ts                  # API Key resolution (config / file / env var / wizard)
-├── types.ts                 # OpenClaw plugin type definitions
-├── dedup.ts                 # Request deduplication (prevent duplicate billing from retries)
-├── retry.ts                 # Exponential backoff retry (429/502/503/504)
-├── logger.ts                # Usage logging (~/.openclaw/zenmux/logs/)
-├── errors.ts                # Error type definitions
-└── router/
-    ├── index.ts             # Router entry (pure rule scoring, sync)
-    ├── rules.ts             # Rule engine (14-dim weighted scoring)
-    ├── selector.ts          # Tier → model selection + cost estimation
-    ├── config.ts            # Default routing config
-    └── types.ts             # Router type definitions
-```
+- 30-minute cache to avoid frequent requests
 
 ## Proxy Server Features
 
-- **SSE Heartbeat**: Streaming requests immediately return 200 + heartbeat packets to prevent OpenClaw 10-15s timeouts
-- **Request Dedup**: SHA-256 request body hashing with 30s TTL cache to prevent duplicate billing from retries
-- **Retry**: Auto exponential backoff retry on 429/502/503/504, supports Retry-After header
-- **Usage Logging**: Each request logged as a JSONL line (`~/.openclaw/zenmux/logs/usage-YYYY-MM-DD.jsonl`)
-
+- **SSE heartbeat**: Streaming requests immediately return 200 + heartbeat packets to prevent OpenClaw 10-15 second timeouts
+- **Request deduplication**: SHA-256 hash of request body with 30-second TTL cache to prevent duplicate billing from retries
+- **Retry mechanism**: Automatic exponential backoff retry on 429/502/503/504, with `Retry-After` header support
+- **Usage logs**: Each request is recorded as one JSONL line (`~/.openclaw/zenmux/logs/usage-YYYY-MM-DD.jsonl`)
 
 ## Development
 
@@ -238,7 +202,7 @@ src/
 # Install dependencies
 npm install
 
-# Dev mode (watch for file changes)
+# Dev mode (watch file changes)
 npm run dev
 
 # Type check
@@ -252,12 +216,23 @@ npm run build
 
 ## Health Check
 
-After the proxy starts, check its status via HTTP:
+After the proxy starts, you can check status via HTTP:
 
 ```bash
 curl http://localhost:8513/health
 # {"status":"ok","provider":"zenmux","models":94}
 ```
+
+> **Note**: This is a community third-party plugin, not an official product. PRs are welcome.
+>
+> This plugin is developed with reference to [ClawRouter](https://github.com/BlockRunAI/ClawRouter), removing blockchain/x402 payment components and switching to ZenMux unified gateway + API key authentication. Thanks to the ClawRouter author for open-source contributions.
+
+## Security Reminder
+
+- `8513` is a local proxy port for `localhost` loopback access only. Do not expose it to the public internet.
+- Do not forward or tunnel port `8513` (for example, router port mapping, cloud security group allow rules, FRP, ngrok, etc.).
+- This port receives local OpenClaw requests. If exposed externally, others may abuse your quota or trigger unexpected requests.
+- It is recommended to bind only to `127.0.0.1` and ensure firewall rules do not allow public inbound traffic to `8513`.
 
 ## Author
 
