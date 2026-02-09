@@ -151,6 +151,7 @@ If you need custom models for each tier, configure the plugin in `~/.openclaw/op
   "plugins": {
     "entries": {
       "clawzenmux": {
+        "enabled": true,
         "config": {
           "apiKey": "your-zenmux-api-key",
           "routing": {

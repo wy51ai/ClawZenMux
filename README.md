@@ -152,6 +152,7 @@ USE COMPLEX 设计一个分布式消息队列的架构
   "plugins": {
     "entries": {
       "clawzenmux": {
+        "enabled": true,
         "config": {
           "apiKey": "your-zenmux-api-key",
           "routing": {
